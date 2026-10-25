@@ -592,7 +592,7 @@ export default function App() {
         const data = await response.json();
         // Only the gateway's HORIZON_LIVE path actually checks the ledger; MOCK is a bypass
         if (data.payment?.method === 'HORIZON_LIVE') {
-          logs.push(`[x402] Payment VERIFIED by ledger via Horizon.`);
+          logs.push(`[x402] VERIFIED by Horizon: gateway found the payment on the ledger (method: HORIZON_LIVE).`);
           logs.push(`[GATEWAY] API Response: ${response.status} OK`);
           logs.push(`[GATEWAY] Data: ${JSON.stringify(data, null, 2)}`);
         } else {
