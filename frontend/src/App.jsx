@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Star, CheckCircle, AlertCircle, X, ChevronDown, ArrowLeft, ExternalLink, Shield, Zap, Clock } from 'lucide-react';
-import { connectWallet } from './utils/wallet';
+import { connectWallet, DEMO_ADDRESS } from './utils/wallet';
 
 /* ── Data ── */
 /* ── Data ── */
@@ -418,7 +418,6 @@ export default function App() {
   const [activePlaygroundJob, setActivePlaygroundJob] = useState(null);
   const [playgroundInput, setPlaygroundInput] = useState('');
   const [playgroundConsoleLogs, setPlaygroundConsoleLogs] = useState([]);
-  const [playgroundStatus, setPlaygroundStatus] = useState('idle');
   const [playgroundLoading, setPlaygroundLoading] = useState(false);
 
   // Rating & Review modal states
@@ -428,14 +427,27 @@ export default function App() {
   const [ratingReviewText, setRatingReviewText] = useState('');
 
   useEffect(() => {
-    const sa = localStorage.getItem('agero_v5_agents');
-    const sj = localStorage.getItem('agero_v5_jobs');
-    const sw = localStorage.getItem('agero_wallet');
-    const sr = localStorage.getItem('agero_v5_reviews');
-    if (sa) setAgents(JSON.parse(sa)); else { setAgents(INITIAL_AGENTS); localStorage.setItem('agero_v5_agents', JSON.stringify(INITIAL_AGENTS)); }
-    if (sj) setJobs(JSON.parse(sj));
-    if (sw) setWallet(sw);
-    if (sr) setReviews(JSON.parse(sr)); else { setReviews(MOCK_REVIEWS); localStorage.setItem('agero_v5_reviews', JSON.stringify(MOCK_REVIEWS)); }
+    // Corrupt or unavailable storage falls back to the seed data instead of crashing
+    const readStored = (key) => {
+      try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch { return null; }
+    };
+    const writeStored = (key, val) => {
+      try { localStorage.setItem(key, JSON.stringify(val)); } catch { /* storage unavailable */ }
+    };
+    const sa = readStored('agero_v5_agents');
+    const sj = readStored('agero_v5_jobs');
+    const sr = readStored('agero_v5_reviews');
+    if (Array.isArray(sa)) setAgents(sa); else { setAgents(INITIAL_AGENTS); writeStored('agero_v5_agents', INITIAL_AGENTS); }
+    // Older builds stored random 0x… IDs that looked like on-chain hashes; show them as simulated references
+    if (Array.isArray(sj)) setJobs(sj.map(j => typeof j.txHash === 'string' && j.txHash.startsWith('0x') ? { ...j, txHash: 'SIM-' + j.txHash.slice(2, 18) } : j));
+    if (sr && typeof sr === 'object' && !Array.isArray(sr)) setReviews(sr); else { setReviews(MOCK_REVIEWS); writeStored('agero_v5_reviews', MOCK_REVIEWS); }
+
+    // The app always starts in Demo mode, so only the demo address may be restored
+    try {
+      const sw = localStorage.getItem('agero_wallet');
+      if (sw === DEMO_ADDRESS) setWallet(sw);
+      else if (sw) localStorage.removeItem('agero_wallet');
+    } catch { /* storage unavailable */ }
   }, []);
 
   useEffect(() => {
@@ -553,7 +565,6 @@ export default function App() {
   const executePlaygroundTask = async () => {
     if (!activePlaygroundJob) return;
     setPlaygroundLoading(true);
-    setPlaygroundStatus('running');
 
     const logs = [];
     logs.push(`[CLIENT] Preparing task payload for: ${activePlaygroundJob.agentName}`);
@@ -590,13 +601,11 @@ export default function App() {
           logs.push(`[sim] [GATEWAY] Data: ${JSON.stringify(data, null, 2)}`);
         }
         setPlaygroundConsoleLogs([...logs]);
-        setPlaygroundStatus('success');
       } else {
         const errData = await response.json().catch(() => ({}));
         logs.push(`[GATEWAY] API Response Error: ${response.status} ${response.statusText}`);
         logs.push(`[GATEWAY] Error Detail: ${JSON.stringify(errData, null, 2)}`);
         setPlaygroundConsoleLogs([...logs]);
-        setPlaygroundStatus('error');
       }
     } catch (err) {
       logs.push(`[WARNING] Failed to connect to local gateway (${err.message}).`);
@@ -611,7 +620,6 @@ export default function App() {
       logs.push(`[sim] [GATEWAY] API Response: 200 OK (Simulated)`);
       logs.push(`[sim] [GATEWAY] Data: {\n  "success": true,\n  "summary": "${simulatedSummary}"\n}`);
       setPlaygroundConsoleLogs([...logs]);
-      setPlaygroundStatus('success');
     } finally {
       setPlaygroundLoading(false);
     }
@@ -1097,7 +1105,6 @@ export default function App() {
                                     setActivePlaygroundJob(job);
                                     setPlaygroundInput('Stellar is an open-source blockchain designed to accelerate cross-border payments cheaply and in a decentralized manner using stablecoins.');
                                     setPlaygroundConsoleLogs([]);
-                                    setPlaygroundStatus('idle');
                                   }}>Test API</button>
                                   <button className="btn btn-green" onClick={() => handleComplete(job)}>Release</button>
                                   <button className="btn btn-red" onClick={() => handleRefund(job)}>Refund</button>
