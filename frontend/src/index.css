@@ -909,6 +909,66 @@ select.form-input option {
 .notif-success { background: rgba(110, 231, 183, 0.9); color: #022c22; }
 .notif-error { background: rgba(252, 165, 165, 0.9); color: #450a0a; }
 
+/* ── Simulation honesty labels ── */
+.sim-banner {
+  background: var(--rose-soft);
+  border-bottom: 1px solid var(--rose-mid);
+  color: var(--rose);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.sim-banner-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
+.sim-banner-inner span { flex: 1; }
+
+.sim-banner-close {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  opacity: 0.7;
+}
+.sim-banner-close:hover { opacity: 1; }
+
+.sample-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--rose-soft);
+  color: var(--rose);
+  border: 1px solid var(--rose-mid);
+  vertical-align: middle;
+}
+
+.sample-note {
+  font-size: 12px;
+  color: var(--rose);
+  background: var(--rose-soft);
+  border: 1px solid var(--rose-mid);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+}
+
+.dropdown-note {
+  font-size: 11px;
+  color: var(--rose);
+  margin: -6px 0 14px;
+}
+
 /* ── Dev Activity List ── */
 .activity-item {
   display: flex;

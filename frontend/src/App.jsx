@@ -127,6 +127,17 @@ const INITIAL_AGENTS = [
   }
 ];
 
+/* ── Sample-data markers (seed agents & reviews are hardcoded, not read from chain) ── */
+const SAMPLE_AGENT_OWNERS = new Set(INITIAL_AGENTS.map(a => a.owner));
+const isSampleAgent = (agent) => SAMPLE_AGENT_OWNERS.has(agent.owner);
+const isSampleReview = (agentName, r) => (MOCK_REVIEWS[agentName] || []).some(m => m.user === r.user && m.text === r.text);
+
+function SampleBadge({ style }) {
+  return (
+    <span className="sample-badge" title="Sample data: hardcoded for this prototype, not read from the Stellar network" style={style}>Sample</span>
+  );
+}
+
 /* ── Logo SVG Component ── */
 function AgeroLogo({ size = 28 }) {
   return (
@@ -385,6 +396,7 @@ export default function App() {
   const [isDemoMode, setIsDemoMode] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [walletOpen, setWalletOpen] = useState(false);
+  const [showSimBanner, setShowSimBanner] = useState(true);
   const walletRef = useRef(null);
 
   const [detailAgent, setDetailAgent] = useState(null);
@@ -438,7 +450,9 @@ export default function App() {
     try {
       const addr = await connectWallet(isDemoMode);
       setWallet(addr); localStorage.setItem('agero_wallet', addr); setWalletOpen(false);
-      notify(`Connected: ${addr.slice(0,4)}...${addr.slice(-4)}`);
+      notify(isDemoMode
+        ? `Demo address connected: ${addr.slice(0,4)}...${addr.slice(-4)}`
+        : 'Wallet connected (address only). Transactions are not signed or sent yet.');
     } catch (e) { notify(e.message, 'error'); }
   };
 
@@ -449,15 +463,17 @@ export default function App() {
     window._cb = () => { cb(); setSimStep('complete'); setTimeout(() => { setShowDrawer(false); setSimStep('idle'); }, 1400); };
   };
 
+  const txNetwork = isDemoMode ? 'Simulated (Demo)' : 'Simulated (Freighter address)';
+
   const handleRegister = (e) => {
     e.preventDefault();
     if (!wallet) return notify('Please connect wallet first', 'error');
     const { name, description, apiUrl, price, category } = newAgent;
-    launchTx({ title: 'AI Agent Registration', operation: 'register_agent', network: isDemoMode ? 'Demo' : 'Freighter', fee: '0.00001 XLM', details: [{ label: 'Name', val: name }, { label: 'Price', val: `${price} XLM` }, { label: 'Endpoint', val: apiUrl }] }, () => {
+    launchTx({ title: 'AI Agent Registration', operation: 'register_agent', network: txNetwork, fee: 'None (simulated)', details: [{ label: 'Name', val: name }, { label: 'Price', val: `${price} XLM` }, { label: 'Endpoint', val: apiUrl }] }, () => {
       const obj = { owner: wallet, name, description, api_url: apiUrl, price: Number(price), rating_sum: 0, rating_count: 0, total_jobs: 0, category, features: [], created: new Date().toLocaleDateString(), response_time: '—' };
       const updated = [obj, ...agents]; setAgents(updated); localStorage.setItem('agero_v5_agents', JSON.stringify(updated));
       setNewAgent({ name: '', description: '', apiUrl: '', price: '', category: 'Text AI' });
-      notify(`"${name}" registered on-chain`);
+      notify(`"${name}" registered (simulated, saved in this browser only)`);
     });
   };
 
@@ -466,20 +482,21 @@ export default function App() {
     if (!wallet) return notify('Please connect wallet first', 'error');
     const amount = Number(jobAmount);
     if (amount < detailAgent.price) return notify('Amount is below minimum price', 'error');
-    launchTx({ title: 'Lock Escrow Funds', operation: 'create_job', network: isDemoMode ? 'Demo' : 'Freighter', fee: '0.00001 XLM', details: [{ label: 'Agent', val: detailAgent.name }, { label: 'Amount', val: `${amount} XLM` }, { label: 'Client', val: wallet.slice(0,8)+'...' }] }, () => {
-      const generatedTxHash = isDemoMode ? 'MOCK_TX_XLM' : '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
+    launchTx({ title: 'Lock Escrow Funds', operation: 'create_job', network: txNetwork, fee: 'None (simulated)', details: [{ label: 'Agent', val: detailAgent.name }, { label: 'Amount', val: `${amount} XLM` }, { label: 'Client', val: wallet.slice(0,8)+'...' }] }, () => {
+      // Simulated reference ID, not an on-chain transaction hash
+      const generatedTxHash = isDemoMode ? 'MOCK_TX_XLM' : 'SIM-' + Array.from({length: 16}, () => Math.floor(Math.random()*16).toString(16)).join('');
       const job = { id: jobs.length + 1, client: wallet, agent: detailAgent.owner, agentName: detailAgent.name, agentApiUrl: detailAgent.api_url || 'localhost:3000/api/summarize', txHash: generatedTxHash, amount, status: 'PENDING', timestamp: new Date().toLocaleDateString() };
       const uj = [job, ...jobs]; setJobs(uj); localStorage.setItem('agero_v5_jobs', JSON.stringify(uj));
       setJobAmount(''); setShowOrderModal(false); setDetailAgent(null);
-      notify(`Escrow #${job.id} locked`); setActivePage('workspace');
+      notify(`Simulated escrow #${job.id} created`); setActivePage('workspace');
     });
   };
 
   const handleComplete = (job) => {
-    launchTx({ title: 'Release Escrow Funds', operation: 'complete_job', network: isDemoMode ? 'Demo' : 'Freighter', fee: '0.00001 XLM', details: [{ label: 'Job', val: `#${job.id}` }, { label: 'Amount', val: `${job.amount} XLM` }] }, () => {
+    launchTx({ title: 'Release Escrow Funds', operation: 'complete_job', network: txNetwork, fee: 'None (simulated)', details: [{ label: 'Job', val: `#${job.id}` }, { label: 'Amount', val: `${job.amount} XLM` }] }, () => {
       const uj = jobs.map(j => j.id === job.id ? { ...j, status: 'COMPLETED' } : j); setJobs(uj); localStorage.setItem('agero_v5_jobs', JSON.stringify(uj));
       const ua = agents.map(a => a.owner === job.agent ? { ...a, total_jobs: a.total_jobs + 1 } : a); setAgents(ua); localStorage.setItem('agero_v5_agents', JSON.stringify(ua));
-      notify(`Escrow #${job.id} released`);
+      notify(`Simulated escrow #${job.id} released`);
       
       // Trigger rating modal
       setRatingJob(job);
@@ -490,9 +507,9 @@ export default function App() {
   };
 
   const handleRefund = (job) => {
-    launchTx({ title: 'Refund Escrow', operation: 'refund_job', network: isDemoMode ? 'Demo' : 'Freighter', fee: '0.00001 XLM', details: [{ label: 'Job', val: `#${job.id}` }, { label: 'Refund', val: `${job.amount} XLM` }] }, () => {
+    launchTx({ title: 'Refund Escrow', operation: 'refund_job', network: txNetwork, fee: 'None (simulated)', details: [{ label: 'Job', val: `#${job.id}` }, { label: 'Refund', val: `${job.amount} XLM` }] }, () => {
       const uj = jobs.map(j => j.id === job.id ? { ...j, status: 'REFUNDED' } : j); setJobs(uj); localStorage.setItem('agero_v5_jobs', JSON.stringify(uj));
-      notify(`Escrow #${job.id} refunded`);
+      notify(`Simulated escrow #${job.id} refunded`);
     });
   };
 
@@ -530,7 +547,7 @@ export default function App() {
 
     setShowRatingModal(false);
     setRatingJob(null);
-    notify(`Rating & review for "${ratingJob.agentName}" submitted successfully!`);
+    notify(`Rating & review for "${ratingJob.agentName}" saved in this browser (simulated)`);
   };
 
   const executePlaygroundTask = async () => {
@@ -541,7 +558,7 @@ export default function App() {
     const logs = [];
     logs.push(`[CLIENT] Preparing task payload for: ${activePlaygroundJob.agentName}`);
     logs.push(`[CLIENT] Target endpoint: http://${activePlaygroundJob.agentApiUrl || 'localhost:3000/api/summarize'}`);
-    logs.push(`[CLIENT] Using X-Stellar-Payment-Tx: ${activePlaygroundJob.txHash || 'MOCK_TX_XLM'}`);
+    logs.push(`[CLIENT] Using X-Stellar-Payment-Tx: ${activePlaygroundJob.txHash || 'MOCK_TX_XLM'} (simulated reference ID)`);
     logs.push(`[HTTP] POST http://${activePlaygroundJob.agentApiUrl || 'localhost:3000/api/summarize'} HTTP/1.1`);
     logs.push(`[HTTP] Headers: { "Content-Type": "application/json", "X-Stellar-Payment-Tx": "${activePlaygroundJob.txHash || 'MOCK_TX_XLM'}" }`);
     logs.push(`[HTTP] Body: { "text": "${playgroundInput.slice(0, 45)}..." }`);
@@ -562,9 +579,16 @@ export default function App() {
 
       if (response.ok) {
         const data = await response.json();
-        logs.push(`[x402] Payment VERIFIED by ledger via Horizon.`);
-        logs.push(`[GATEWAY] API Response: ${response.status} OK`);
-        logs.push(`[GATEWAY] Data: ${JSON.stringify(data, null, 2)}`);
+        // Only the gateway's HORIZON_LIVE path actually checks the ledger; MOCK is a bypass
+        if (data.payment?.method === 'HORIZON_LIVE') {
+          logs.push(`[x402] Payment VERIFIED by ledger via Horizon.`);
+          logs.push(`[GATEWAY] API Response: ${response.status} OK`);
+          logs.push(`[GATEWAY] Data: ${JSON.stringify(data, null, 2)}`);
+        } else {
+          logs.push(`[sim] [x402] Gateway accepted a mock payment reference (method: ${data.payment?.method || 'unknown'}). No ledger check was made.`);
+          logs.push(`[sim] [GATEWAY] API Response: ${response.status} OK`);
+          logs.push(`[sim] [GATEWAY] Data: ${JSON.stringify(data, null, 2)}`);
+        }
         setPlaygroundConsoleLogs([...logs]);
         setPlaygroundStatus('success');
       } else {
@@ -581,11 +605,11 @@ export default function App() {
 
       await new Promise(r => setTimeout(r, 1500));
 
-      const simulatedSummary = `[SIMULATION SUMMARY] Your text summary: "${playgroundInput.substring(0, 50)}..." (Original text length was ${playgroundInput.length} characters). Transaction verified via Soroban Escrow simulation.`;
+      const simulatedSummary = `[SIMULATION SUMMARY] Your text summary: "${playgroundInput.substring(0, 50)}..." (Original text length was ${playgroundInput.length} characters). No payment or contract call was made.`;
 
-      logs.push(`[x402] Payment VERIFIED via Escrow simulation in smart contract.`);
-      logs.push(`[GATEWAY] API Response: 200 OK (Simulated)`);
-      logs.push(`[GATEWAY] Data: {\n  "success": true,\n  "summary": "${simulatedSummary}"\n}`);
+      logs.push(`[sim] [x402] Payment step simulated in the browser. No contract or Horizon call was made.`);
+      logs.push(`[sim] [GATEWAY] API Response: 200 OK (Simulated)`);
+      logs.push(`[sim] [GATEWAY] Data: {\n  "success": true,\n  "summary": "${simulatedSummary}"\n}`);
       setPlaygroundConsoleLogs([...logs]);
       setPlaygroundStatus('success');
     } finally {
@@ -623,6 +647,17 @@ export default function App() {
           </div>
         )}
 
+        {/* ── Prototype banner (dismissible until reload) ── */}
+        {showSimBanner && (
+          <div className="sim-banner" role="status">
+            <div className="container sim-banner-inner">
+              <AlertCircle size={15} style={{ flexShrink: 0 }} />
+              <span>Prototype: transactions in this app are simulated. The escrow contract is deployed on Stellar Testnet but is not connected to this UI yet.</span>
+              <button className="sim-banner-close" aria-label="Dismiss notice" onClick={() => setShowSimBanner(false)}><X size={14} /></button>
+            </div>
+          </div>
+        )}
+
         {/* ── Navbar ── */}
         <nav className="navbar">
           <div className="container navbar-inner">
@@ -654,7 +689,7 @@ export default function App() {
                     <button className={`mode-option ${isDemoMode ? 'active' : ''}`} onClick={() => { setIsDemoMode(true); if (wallet) handleDisconnect(); }}>Demo</button>
                     <button className={`mode-option ${!isDemoMode ? 'active' : ''}`} onClick={() => { setIsDemoMode(false); if (wallet) handleDisconnect(); }}>Freighter</button>
                   </div>
-                  {wallet ? (<><div className="dropdown-label">Address</div><div className="dropdown-addr">{wallet}</div><button className="dropdown-action dropdown-disconnect" onClick={handleDisconnect}>Disconnect Wallet</button></>) : (
+                  {wallet ? (<><div className="dropdown-label">Address</div><div className="dropdown-addr">{wallet}</div><div className="dropdown-note">{isDemoMode ? 'Demo address. All transactions are simulated.' : 'Wallet connected (address only). Transactions are not signed or sent yet.'}</div><button className="dropdown-action dropdown-disconnect" onClick={handleDisconnect}>Disconnect Wallet</button></>) : (
                     <button className="dropdown-action dropdown-connect" onClick={handleConnect}>Connect Wallet</button>
                   )}
                 </div>
@@ -676,10 +711,14 @@ export default function App() {
                 <div className="card detail-main">
                   <div className="detail-meta">
                     <span className="detail-tag" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>{detailAgent.category}</span>
+                    {isSampleAgent(detailAgent) && <SampleBadge />}
                     <Stars sum={detailAgent.rating_sum} count={detailAgent.rating_count} size={15} />
                   </div>
                   <h1 className="detail-name">{detailAgent.name}</h1>
                   <p className="detail-desc">{detailAgent.description}</p>
+                  {isSampleAgent(detailAgent) && (
+                    <p className="sample-note">Sample listing: profile, rating, job count, endpoint, and reviews are hardcoded for this prototype and are not read from the Stellar network.</p>
+                  )}
 
                   <div className="detail-info-grid">
                     <div className="detail-info-item">
@@ -710,9 +749,9 @@ export default function App() {
 
                   {detailAgent.image && (
                     <div style={{ marginBottom: '24px' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-dim)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sample Work Output</div>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-dim)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sample output (static image)</div>
                       <div className="detail-showcase-img-container" style={{ overflow: 'hidden', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                        <img src={detailAgent.image} alt={`${detailAgent.name} Sample Output`} style={{ width: '100%', height: 'auto', display: 'block', maxHeight: '300px', objectFit: 'cover' }} />
+                        <img src={detailAgent.image} alt={`${detailAgent.name} sample output (static image)`} style={{ width: '100%', height: 'auto', display: 'block', maxHeight: '300px', objectFit: 'cover' }} />
                       </div>
                     </div>
                   )}
@@ -741,7 +780,7 @@ export default function App() {
                     reviews[detailAgent.name].map((r, i) => (
                       <div key={i} className="review-item">
                         <div className="review-header">
-                          <span className="review-user">{r.user}</span>
+                          <span className="review-user">{r.user}{isSampleReview(detailAgent.name, r) && <SampleBadge style={{ marginLeft: '8px' }} />}</span>
                           <span className="review-date">{r.date}</span>
                         </div>
                         <Stars sum={r.stars} count={1} size={12} />
@@ -796,6 +835,7 @@ export default function App() {
                           <div className="featured-img-wrapper">
                             <img src={agent.image} alt={agent.name} className="featured-img" />
                             <div className="featured-category">{agent.category}</div>
+                            {isSampleAgent(agent) && <SampleBadge style={{ position: 'absolute', top: '12px', right: '12px' }} />}
                           </div>
                           <div className="featured-body">
                             <h3 className="featured-name">{agent.name}</h3>
@@ -813,7 +853,7 @@ export default function App() {
                   {/* Workflow Steps Section */}
                   <div className="workflow-section">
                     <h2 className="showcase-title">How Agero Works</h2>
-                    <p className="showcase-desc">Simple, secure, M2M escrow workflow verified by smart contracts.</p>
+                    <p className="showcase-desc">The intended M2M escrow workflow. In this prototype every step is simulated in the browser.</p>
                     
                     <div className="workflow-timeline">
                       <div className="timeline-progress-line" />
@@ -830,7 +870,7 @@ export default function App() {
                         <div className="timeline-indicator">2</div>
                         <div className="card timeline-card">
                           <h3 className="workflow-card-title">Lock Escrow</h3>
-                          <p className="workflow-card-desc">Lock target job pricing inside Soroban smart contract bounds.</p>
+                          <p className="workflow-card-desc">Lock the job price in escrow (simulated here; the Soroban contract is not connected yet).</p>
                         </div>
                       </div>
 
@@ -838,7 +878,7 @@ export default function App() {
                         <div className="timeline-indicator">3</div>
                         <div className="card timeline-card">
                           <h3 className="workflow-card-title">Execute Playground</h3>
-                          <p className="workflow-card-desc">Interact with the autonomous gateway with real transaction hashes.</p>
+                          <p className="workflow-card-desc">Call the x402 gateway demo with a simulated reference ID.</p>
                         </div>
                       </div>
 
@@ -846,7 +886,7 @@ export default function App() {
                         <div className="timeline-indicator">4</div>
                         <div className="card timeline-card">
                           <h3 className="workflow-card-title">Release Funds</h3>
-                          <p className="workflow-card-desc">Decentralize escrow payments directly to the developer wallet.</p>
+                          <p className="workflow-card-desc">Release escrow to the developer wallet (simulated in this prototype).</p>
                         </div>
                       </div>
                     </div>
@@ -859,7 +899,7 @@ export default function App() {
                 <div className="page-view">
                   <div className="section-header">
                     <h1 className="section-title">Marketplace</h1>
-                    <p className="section-desc">Explore and hire decentralized AI Agents on the Stellar Soroban network. Click an agent to view complete details.</p>
+                    <p className="section-desc">Explore AI Agents and simulate hiring them. Listings marked Sample are hardcoded demo data, not read from the Stellar network. Click an agent to view complete details.</p>
                   </div>
 
                   <div className="stat-row">
@@ -896,6 +936,7 @@ export default function App() {
                             <h3 className="agent-name">{agent.name}</h3>
                             <span className="agent-category">{agent.category}</span>
                           </div>
+                          {isSampleAgent(agent) && <SampleBadge style={{ marginBottom: '8px' }} />}
                           <p className="agent-desc">{agent.description}</p>
                           <div className="agent-bottom">
                             <div className="agent-price">{agent.price}<span className="agent-price-unit">XLM</span></div>
@@ -913,7 +954,7 @@ export default function App() {
                 <div className="page-view">
                   <div className="section-header">
                     <h1 className="section-title">Developer Portal</h1>
-                    <p className="section-desc">Register your AI Agent to the network and track your performance and earnings.</p>
+                    <p className="section-desc">Register your AI Agent and track your performance and earnings. Registration is simulated and saved in this browser only.</p>
                   </div>
 
                   <div className="stat-row">
@@ -949,7 +990,7 @@ export default function App() {
                           <div className="form-group"><label className="form-label">Description</label><textarea className="form-input" style={{ minHeight: '80px', resize: 'vertical' }} placeholder="Describe your agent's capabilities..." value={newAgent.description} onChange={e => setNewAgent({...newAgent, description: e.target.value})} required /></div>
                           <div className="form-group"><label className="form-label">API Endpoint</label><input className="form-input" placeholder="api.domain.com/v1/task" value={newAgent.apiUrl} onChange={e => setNewAgent({...newAgent, apiUrl: e.target.value})} required /></div>
                           <div className="form-group"><label className="form-label">Price (XLM/USDC)</label><input type="number" className="form-input" placeholder="100" value={newAgent.price} onChange={e => setNewAgent({...newAgent, price: e.target.value})} required /></div>
-                          <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Register On-Chain</button>
+                          <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Register Agent (Simulated)</button>
                         </form>
                       )}
                     </div>
@@ -999,7 +1040,7 @@ export default function App() {
                 <div className="page-view">
                   <div className="section-header">
                     <h1 className="section-title">Client Workspace</h1>
-                    <p className="section-desc">Manage your active job escrow contracts. Funds are securely locked in Soroban smart contracts.</p>
+                    <p className="section-desc">Manage your job escrows. Escrows here are simulated and stored in this browser only; no funds are locked on-chain.</p>
                   </div>
 
                   <div className="stat-row">
@@ -1085,7 +1126,7 @@ export default function App() {
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>Minimum price: <strong style={{ color: 'var(--text)' }}>{detailAgent.price} XLM/USDC</strong></p>
               <form onSubmit={handleHire}>
                 <div className="form-group"><label className="form-label">Escrow Amount</label><input type="number" className="form-input" placeholder={`Min. ${detailAgent.price}`} value={jobAmount} onChange={e => setJobAmount(e.target.value)} min={detailAgent.price} required /></div>
-                <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Lock Funds</button>
+                <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Lock Funds (Simulated)</button>
               </form>
             </div>
           </div>
@@ -1097,7 +1138,7 @@ export default function App() {
             <div className="drawer" onClick={e => e.stopPropagation()}>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                  <span className="drawer-title">Confirm Transaction</span>
+                  <span className="drawer-title">Confirm Simulated Transaction</span>
                   {simStep === 'signing' && <button style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }} onClick={() => { setShowDrawer(false); setSimStep('idle'); notify('Rejected', 'error'); }}><X size={18} /></button>}
                 </div>
                 {simStep === 'signing' && (
@@ -1107,6 +1148,7 @@ export default function App() {
                       <div className="drawer-row"><span className="drawer-row-label">Network</span><span className="drawer-row-val">{simTx.network}</span></div>
                       <div className="drawer-row"><span className="drawer-row-label">Fee</span><span className="drawer-row-val">{simTx.fee}</span></div>
                     </div>
+                    <p className="sample-note">Simulated: nothing is signed or submitted to the Stellar network. The result is saved in this browser only.</p>
                     <div className="drawer-info">
                       {simTx.details.map((d, i) => <div key={i} className="drawer-row"><span className="drawer-row-label">{d.label}</span><span className="drawer-row-val" style={{ wordBreak: 'break-all', textAlign: 'right', maxWidth: '60%' }}>{d.val}</span></div>)}
                     </div>
@@ -1115,14 +1157,14 @@ export default function App() {
                 {simStep === 'submitting' && (
                   <div style={{ textAlign: 'center', padding: '50px 0' }}>
                     <div className="spinner" />
-                    <p style={{ fontWeight: 600 }}>Submitting transaction...</p>
-                    <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '6px' }}>Waiting for ledger confirmation</p>
+                    <p style={{ fontWeight: 600 }}>Simulating transaction...</p>
+                    <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginTop: '6px' }}>No ledger involved</p>
                   </div>
                 )}
                 {simStep === 'complete' && (
                   <div style={{ textAlign: 'center', padding: '50px 0' }}>
                     <CheckCircle size={44} style={{ color: 'var(--green)', marginBottom: '12px' }} />
-                    <p style={{ fontWeight: 600 }}>Transaction Successful</p>
+                    <p style={{ fontWeight: 600 }}>Simulated Transaction Complete</p>
                   </div>
                 )}
               </div>
@@ -1217,12 +1259,12 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label className="form-label" style={{ fontFamily: 'monospace', fontSize: '11px' }}>HEADER: X-Stellar-Payment-Tx</label>
+                    <label className="form-label" style={{ fontFamily: 'monospace', fontSize: '11px' }}>HEADER: X-Stellar-Payment-Tx (Simulated reference ID)</label>
                     <div style={{ fontFamily: 'monospace', fontSize: '11px', background: 'rgba(37,99,235,0.03)', border: '1px solid var(--border)', padding: '8px 12px', borderRadius: '6px', wordBreak: 'break-all', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
                       <span style={{ color: 'var(--accent)' }}>{activePlaygroundJob.txHash || 'MOCK_TX_XLM'}</span>
                     </div>
                     <span style={{ fontSize: '10px', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>
-                      *This hash represents your locked escrow contract on Soroban.
+                      *Simulated reference ID generated in this browser. It is not a Stellar transaction hash and no escrow was locked on-chain.
                     </span>
                   </div>
 
@@ -1259,7 +1301,8 @@ export default function App() {
                     ) : (
                       playgroundConsoleLogs.map((log, index) => {
                         let color = 'var(--text-secondary)';
-                        if (log.startsWith('[CLIENT]')) color = 'var(--blue)';
+                        if (log.startsWith('[sim]')) color = 'var(--amber)';
+                        else if (log.startsWith('[CLIENT]')) color = 'var(--blue)';
                         else if (log.startsWith('[HTTP]')) color = 'var(--lavender)';
                         else if (log.startsWith('[x402]')) color = 'var(--amber)';
                         else if (log.startsWith('[GATEWAY] API Response: 200')) color = 'var(--green)';
@@ -1275,7 +1318,7 @@ export default function App() {
                     {playgroundLoading && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent)', marginTop: '8px', fontFamily: 'monospace', fontSize: '11px' }}>
                         <span className="spinner" style={{ width: '12px', height: '12px', borderWidth: '1.5px', margin: 0 }} />
-                        <span>Waiting for ledger / API response...</span>
+                        <span>Waiting for API response...</span>
                       </div>
                     )}
                   </div>
