@@ -1,7 +1,8 @@
 # Agero — aturan tetap
 
-Prototype: kontrak escrow Soroban ada di Testnet, tetapi frontend belum memanggilnya.
-Semua transaksi di UI adalah simulasi (`localStorage`). Lihat `docs/audit/agero-audit.md`.
+Prototype: frontend MEMBACA registry/rating/job dari kontrak escrow v2 di Testnet. Jalur TULIS lewat
+Freighter (create/complete/refund/rate) sudah ditulis tetapi belum teruji manual (`docs/deploy.md` §9).
+x402 dan eksekusi agen tetap simulasi. Lihat `docs/audit/agero-audit.md`.
 
 ## Kejujuran
 - Jangan menulis "on-chain", "verified", "tx hash" atau klaim serupa di UI/README
