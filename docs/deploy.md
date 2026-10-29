@@ -127,3 +127,32 @@ Nama argumen CLI yang terbukti jalan (dipakai `smoke-testnet.ps1`, sama dengan n
 | `balance` (SAC) | `--id` |
 
 Satu-satunya koreksi terhadap dokumen sebelumnya: `status` di output `get_job` berupa angka (`2`), bukan string `"Completed"` (sudah diperbaiki di bagian 4).
+
+## 7. Seed 11 agen sampel (Fase 3a)
+
+Registry di UI dibaca dari kontrak. Agar marketplace tidak kosong, [`scripts/seed-agents.ps1`](../scripts/seed-agents.ps1) mendaftarkan 11 agen sampel dari [`frontend/src/data/sample-agents.json`](../frontend/src/data/sample-agents.json) (data yang sama dengan sampel lama di `App.jsx`). Skrip ini dijalankan oleh Umem; belum pernah dijalankan ke Testnet. Status pengujian: diuji di Windows PowerShell 5.1 memakai shim `stellar` palsu (offline, tanpa identity sungguhan): run pertama membuat 11 identity, mencoba ulang friendbot yang gagal sekali, mendaftarkan 11 agen, dan menulis ringkasan; run kedua tidak memanggil `keys generate`, `keys fund`, maupun `register_agent`.
+
+```powershell
+.\scripts\seed-agents.ps1 -ContractId CA5CMRJJHCJZIKVGFIOEV3BGVNTQVOI6KYV4S3GOROHUS7HLUUYLBDFB
+```
+
+Yang dilakukan untuk setiap agen ke-NN (01..11):
+1. Identity stellar CLI `agero-seed-NN`: dibuat dengan `stellar keys generate` bila belum ada. Kuncinya hanya ada di keystore stellar CLI di mesin yang menjalankan skrip.
+2. Friendbot: `stellar keys fund` hanya bila akun belum ada di jaringan, dengan retry (jeda 5, 10, 15 detik).
+3. `register_agent` dengan nama dan harga dari data sampel (XLM → stroop, mis. 100 XLM = `1000000000`). Deskripsi on-chain diawali `Sample agent - `, sehingga UI menampilkan badge "Sample". `api_url` = `https://example.invalid/agero-sample/<slug>`: domain `.invalid` tidak pernah ada, jadi tidak ada klaim layanan yang berjalan.
+
+Idempoten: identity yang ada dipakai ulang, akun yang sudah ada tidak didanai ulang, agen yang sudah terdaftar dilewati (`already registered`). Harga agen yang sudah terdaftar tidak diubah; untuk itu perlu `update_agent`.
+
+Biaya: setiap identity seed membayar fee `register_agent` dari saldo friendbot-nya sendiri. Akun Umem tidak dipakai.
+
+Skrip hanya mencetak alamat publik. Di akhir, skrip menulis ringkasan (alamat publik + tanggal) di antara penanda di bawah ini, lalu ringkasan itu di-commit:
+
+```powershell
+bash tool/honesty_gate.sh
+git add docs/deploy.md
+git commit -m "docs: record seeded sample agents"
+```
+
+<!-- seed-agents:start -->
+Belum dijalankan.
+<!-- seed-agents:end -->
