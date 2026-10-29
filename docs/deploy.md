@@ -14,7 +14,7 @@ Semua perintah dijalankan dari root repo (`agero/`) di **PowerShell** (linker Gi
 
 Bila PowerShell menolak menjalankan skrip lokal, jalankan dengan `powershell -ExecutionPolicy Bypass -File .\scripts\<nama>.ps1 ...`.
 
-Status pengujian skrip: `deploy-testnet.ps1` dan `smoke-testnet.ps1` sudah diuji di **Windows PowerShell 5.1** memakai shim `stellar` palsu (offline, output tiruan termasuk kasus output kosong dan exit code non-nol), **belum** dengan jaringan nyata. Versi CLI yang dipakai 27.0.0; peringatan `A new release of Stellar CLI is available` di stderr boleh diabaikan.
+Status pengujian skrip: `deploy-testnet.ps1` dan `smoke-testnet.ps1` diuji di **Windows PowerShell 5.1** memakai shim `stellar` palsu (offline, termasuk kasus output kosong dan exit code non-nol), lalu dijalankan sungguhan ke Testnet pada 2026-10-29 (hasil di [bagian 6](#6-hasil-deploy-dan-smoke-test-testnet-2026-10-29)). Versi CLI yang dipakai 27.0.0; peringatan `A new release of Stellar CLI is available` di stderr boleh diabaikan.
 
 ## 1. Siapkan tiga identity + friendbot
 
@@ -72,7 +72,7 @@ Urutan: `register_agent` (dilewati bila agen sudah terdaftar) → `create_job` (
 
 Hasil yang diharapkan:
 - `job_id = 1` pada run pertama (bertambah di run berikutnya).
-- `get_job` menampilkan `"status": "Completed"`, `"rated": true`, `result_hash` sama dengan yang dicetak di langkah 3/5.
+- `get_job` menampilkan `"status": 2`, `"rated": true`, `result_hash` sama dengan yang dicetak di langkah 3/5. CLI mencetak `JobStatus` sebagai angka: `0` Pending, `1` Delivered, `2` Completed, `3` Refunded.
 - `get_agent` menampilkan `total_jobs` dan `rating_count` naik 1, `rating_sum` naik 5.
 - Saldo akhir: klien turun sekitar 1 XLM + fee, agen naik sekitar 1 XLM dikurangi fee miliknya, `contract = 0` bila tidak ada job lain yang masih terbuka.
 
@@ -97,3 +97,33 @@ git commit -m "docs: record contract v2 testnet deployment"
 ```
 
 (`bash` di sini adalah Git Bash. Bila `bash` di PowerShell mengarah ke WSL, jalankan gate dari terminal Git Bash.)
+
+## 6. Hasil deploy dan smoke test Testnet (2026-10-29)
+
+| Item | Nilai |
+|---|---|
+| Contract ID v2 | `CA5CMRJJHCJZIKVGFIOEV3BGVNTQVOI6KYV4S3GOROHUS7HLUUYLBDFB` ([stellar.expert](https://stellar.expert/explorer/testnet/contract/CA5CMRJJHCJZIKVGFIOEV3BGVNTQVOI6KYV4S3GOROHUS7HLUUYLBDFB)) |
+| WASM hash | `6e226ba57df163646848f1f7fcdc5a27629f60268ed8bf64025c9997d7093f46` (12400 byte) |
+| Token (XLM SAC) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
+| Smoke test | lulus, `job_id = 1` |
+| Saldo akhir | kontrak `0`; klien -10502769 stroop (1 XLM escrow + fee); agen +9409292 stroop (1 XLM dikurangi fee `register_agent` dan `deliver_job`) |
+| CLI | stellar 27.0.0, Windows PowerShell 5.1 |
+
+Pemeriksaan read-only sesudahnya (tanpa transaksi; `--send=no` hanya simulasi):
+- `stellar contract info interface --id <CONTRACT_ID> --network testnet` memuat 14 fungsi: `__constructor`, `register_agent`, `update_agent`, `create_job`, `deliver_job`, `complete_job`, `release_job`, `refund_job`, `rate_agent`, `get_agent`, `get_job`, `job_count`, `agent_count`, `agent_at`. Sama dengan `contracts/agero-contract/src/lib.rs`.
+- `stellar contract fetch --id <CONTRACT_ID> --network testnet` menghasilkan WASM dengan SHA-256 yang sama dengan hash di atas dan dengan build lokal.
+- `job_count = 1`, `agent_count = 1`, `get_job --job_id 1` → `"status": 2` (Completed), `"rated": true`, `amount "10000000"`; saldo kontrak di SAC `"0"`.
+
+Nama argumen CLI yang terbukti jalan (dipakai `smoke-testnet.ps1`, sama dengan nama parameter kontrak):
+
+| Fungsi | Argumen |
+|---|---|
+| `register_agent` | `--owner --name --description --api_url --price` |
+| `create_job` | `--client --agent_owner --amount --duration_secs` |
+| `deliver_job` | `--job_id --result_hash` (hex 64 karakter) |
+| `complete_job` | `--job_id` |
+| `rate_agent` | `--client --job_id --rating` |
+| `get_job` / `get_agent` | `--job_id` / `--id` |
+| `balance` (SAC) | `--id` |
+
+Satu-satunya koreksi terhadap dokumen sebelumnya: `status` di output `get_job` berupa angka (`2`), bukan string `"Completed"` (sudah diperbaiki di bagian 4).

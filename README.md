@@ -12,6 +12,9 @@
 </p>
 
 <p align="center">
+  <a href="https://stellar.expert/explorer/testnet/contract/CA5CMRJJHCJZIKVGFIOEV3BGVNTQVOI6KYV4S3GOROHUS7HLUUYLBDFB">
+    <img src="https://img.shields.io/badge/Contract%20v2-Testnet-blue?style=for-the-badge&logo=stellar" alt="Contract v2 (Testnet)" />
+  </a>
   <a href="https://stellar.expert/explorer/testnet/contract/CBEIINKJWTVYY3WNJGWFWJECNLZHT2RA3YXATDLTGKZGFN5ZOMDRBW5X">
     <img src="https://img.shields.io/badge/Contract%20v1-deprecated-lightgrey?style=for-the-badge&logo=stellar" alt="Contract v1 (deprecated)" />
   </a>
@@ -44,7 +47,7 @@
 
 **Agero** is a prototype marketplace where users can discover, hire, and pay AI agents for tasks such as text summarization, image generation, code auditing, voice cloning, and more. The goal is to lock payments in a **Soroban escrow smart contract** and release them when the client approves the work, enabling machine-to-machine (M2M) transactions on the **Stellar network**.
 
-> **Prototype notice:** an escrow contract (v1) is deployed on Stellar Testnet and a redesigned v2 contract is written and unit-tested but **not deployed yet**. The web UI is **not connected to either contract**. Every transaction in the UI is simulated in the browser (`localStorage`), and the agents, ratings, job counts and reviews are sample data. See [Status](#-status) and the [audit report](docs/audit/agero-audit.md).
+> **Prototype notice:** the redesigned escrow contract v2 is deployed on Stellar Testnet (CLI smoke test passed on 2026-10-29); the older v1 contract is still live but deprecated. The web UI is **not connected to either contract**. Every transaction in the UI is simulated in the browser (`localStorage`), and the agents, ratings, job counts and reviews are sample data. See [Status](#-status) and the [audit report](docs/audit/agero-audit.md).
 
 ---
 
@@ -55,7 +58,7 @@ What actually works today (based on the [2026-10-25 audit](docs/audit/agero-audi
 | Feature | Status | Notes |
 |---|---|---|
 | Escrow contract v2 (source in `contracts/agero-contract`) | ✅ Real | Deadlines, delivery step, 72 h auto-release, fixed XLM token, typed errors, events, TTL extension. 59/59 unit tests pass, including negative auth and audit regression tests. See [docs/contract-v2.md](docs/contract-v2.md) |
-| Contract v2 deployed to Testnet | ⛔ Not yet | Scripts and steps are ready ([docs/deploy.md](docs/deploy.md)); no contract ID yet |
+| Contract v2 deployed to Testnet | ✅ Real | `CA5CMRJJ…LBDFB`, deployed 2026-10-29. CLI smoke test (register → create → deliver → complete → rate) passed with job_id `1`; contract balance back to 0 afterwards. Interface (14 functions) and WASM hash checked against the local build with stellar CLI. See [docs/deploy.md](docs/deploy.md) |
 | Contract v1 on Testnet (`CBEIINKJ…BW5X`) | ⚠️ Deprecated | Still live; built from the v1 source (commit `b706175`), which no longer matches `main`. 1 contract invocation at audit time. Has the issues listed in the audit (F02, F04–F07, F11–F14) |
 | Live web app (agero.vercel.app) | ✅ Real | Static React SPA |
 | UI calls the contract (`create_job` / `complete_job` / `refund_job`) | ⛔ Not yet | No Stellar SDK, RPC or contract ID in the frontend |
@@ -66,14 +69,20 @@ What actually works today (based on the [2026-10-25 audit](docs/audit/agero-audi
 | x402 payment verification | 🟡 Simulated (live) | Live site always falls back to a browser simulation. The local gateway (`scripts/x402_simulator.js`) checks classic payments on Horizon but has a `MOCK_TX_*` bypass and is not linked to the escrow |
 | Freighter wallet | 🟡 Partial | Connects and reads the address (Testnet check). Transactions are not signed or sent |
 | Contract ratings | ⛔ Not yet (in UI) | v2: one 1–5 rating per Completed job, by that job's client (auth). v1 has no auth. The UI calls neither; text reviews live in `localStorage` |
-| Deadlines | 🟡 v2 source only | Client picks a deadline (1 h – 30 d); not deployed yet |
+| Deadlines | 🟡 v2 contract only | Client picks a deadline (1 h – 30 d); live in v2 on Testnet, not in the UI |
 | Dispute resolution | ⛔ None (by design) | v2 has no arbiter: after delivery the client has 72 h to approve, then anyone can release funds to the agent |
-| Escrow token restriction | 🟡 v2 source only | v2 fixes the token to native XLM at deploy time; v1 accepts any token |
+| Escrow token restriction | 🟡 v2 contract only | v2 fixes the token to native XLM at deploy time (the Testnet v2 uses the native XLM SAC); v1 accepts any token |
 | Interactive 3D canvas | ✅ Real | HTML5 Canvas |
 
 ### 🔑 Contract Address (Testnet)
 
-**v2:** not deployed yet (see [docs/deploy.md](docs/deploy.md)).
+**v2** (deployed 2026-10-29):
+
+```
+CA5CMRJJHCJZIKVGFIOEV3BGVNTQVOI6KYV4S3GOROHUS7HLUUYLBDFB
+```
+
+> 🔗 v2: [View on Stellar Explorer](https://stellar.expert/explorer/testnet/contract/CA5CMRJJHCJZIKVGFIOEV3BGVNTQVOI6KYV4S3GOROHUS7HLUUYLBDFB) · WASM hash `6e226ba57df163646848f1f7fcdc5a27629f60268ed8bf64025c9997d7093f46`
 
 **v1 (deprecated):**
 
@@ -146,7 +155,7 @@ Connect via Freighter browser extension (address only, Testnet) or Demo mode. Re
               ┌──────────▼──────────┐
               │  Soroban Contract   │
               │  v2 (WASM)          │
-              │  not deployed yet   │
+              │  on Testnet         │
               │  ─────────────────  │
               │  register_agent     │
               │  update_agent       │
@@ -174,7 +183,7 @@ Connect via Freighter browser extension (address only, Testnet) or Demo mode. Re
 | Feature | Description |
 |---|---|
 | **AI Agent Marketplace** (sample data) | 11 sample agents: Summarizer Bot, Image Generator Pro, Translation Bot XL, Code Auditor AI, Data Analyst Bot, Voice Cloner AI, Music Composer AI, SEO Optimizer Bot, Chatbot Assistant, Sentiment Analyst, Video Generator AI |
-| **Soroban Escrow** (contract only, v2 not deployed) | v2 locks native XLM in `create_job` with a client-chosen deadline. The agent delivers a result hash; the client approves with `complete_job`, or after 72 h anyone can `release_job` to the agent. The client can refund only after the deadline if nothing was delivered; the agent can refund any time before payout. No arbiter. The UI does not call the contract yet |
+| **Soroban Escrow** (contract only, v2 on Testnet) | v2 locks native XLM in `create_job` with a client-chosen deadline. The agent delivers a result hash; the client approves with `complete_job`, or after 72 h anyone can `release_job` to the agent. The client can refund only after the deadline if nothing was delivered; the agent can refund any time before payout. No arbiter. The UI does not call the contract yet |
 | **x402 Payment Protocol** (demo) | Payment header passed over HTTP to a local gateway demo; simulated on the live site |
 | **Interactive 3D Core** | Cursor-responsive holographic wireframe AI robot on HTML5 Canvas |
 | **Freighter Integration** (address only) | Connect a Freighter wallet on Testnet to read its address, or use built-in Demo mode. No transactions are signed yet |
@@ -254,7 +263,7 @@ agero/
 │   └── index.html
 ├── scripts/
 │   ├── x402_simulator.js       # Local x402 payment gateway simulator
-│   ├── deploy-testnet.ps1      # Build + deploy contract v2 (not run yet)
+│   ├── deploy-testnet.ps1      # Build + deploy contract v2
 │   └── smoke-testnet.ps1       # register → create → deliver → complete → rate
 ├── docs/
 │   ├── contract-v2.md           # State machine, events, errors, audit → test map
@@ -272,7 +281,7 @@ agero/
 
 ## 📜 Smart Contract API (v2)
 
-Contract v2 in [`contracts/agero-contract/src/lib.rs`](contracts/agero-contract/src/lib.rs). Unit-tested (59/59), **not deployed yet**. Full transition table, events and error codes: [docs/contract-v2.md](docs/contract-v2.md).
+Contract v2 in [`contracts/agero-contract/src/lib.rs`](contracts/agero-contract/src/lib.rs). Unit-tested (59/59), deployed to Testnet as `CA5CMRJJ…LBDFB` (see [Contract Address](#-contract-address-testnet)). Full transition table, events and error codes: [docs/contract-v2.md](docs/contract-v2.md).
 
 ### State machine
 
@@ -375,7 +384,7 @@ Client                    Smart Contract                 AI Agent Developer
   ├── rate_agent ─────────────►│── store rating               │
 ```
 
-Contract v2 flow (not deployed yet); the web UI simulates these steps and does not call any contract.
+Contract v2 flow (deployed on Testnet; exercised once by the CLI smoke test). The web UI simulates these steps and does not call any contract.
 - **Token:** native XLM, fixed at deploy time.
 - **Refund:** the client can refund only after the deadline if nothing was delivered; the agent can refund any time before payout. There is no arbiter.
 - **Rating:** one 1–5 rating per Completed job, by that job's client.
