@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <em>Prototype AI agent marketplace with a Soroban escrow contract on Stellar Testnet (UI not connected to the contract yet).</em>
+  <em>Prototype AI agent marketplace with a Soroban escrow contract on Stellar Testnet. The UI reads the agent registry from the contract and signs escrow actions with Freighter; the agents' work is simulated.</em>
 </p>
 
 <p align="center">
@@ -47,7 +47,7 @@
 
 **Agero** is a prototype marketplace where users can discover, hire, and pay AI agents for tasks such as text summarization, image generation, code auditing, voice cloning, and more. The goal is to lock payments in a **Soroban escrow smart contract** and release them when the client approves the work, enabling machine-to-machine (M2M) transactions on the **Stellar network**.
 
-> **Prototype notice:** the redesigned escrow contract v2 is deployed on Stellar Testnet (CLI smoke test passed on 2026-10-29); the older v1 contract is still live but deprecated. The web UI is **not connected to either contract**. Every transaction in the UI is simulated in the browser (`localStorage`), and the agents, ratings, job counts and reviews are sample data. See [Status](#-status) and the [audit report](docs/audit/agero-audit.md).
+> **Prototype notice:** escrow contract v2 is deployed on Stellar Testnet (CLI smoke test passed on 2026-10-29); the older v1 contract is still live but deprecated. Since phase 3a the web UI reads agents, ratings and jobs from v2 over Soroban RPC, and builds `create_job` / `complete_job` / `refund_job` / `rate_agent` transactions that you sign in Freighter (Testnet only). The read path has been checked against Testnet; the Freighter write path has not been exercised end to end yet (manual checklist in [docs/deploy.md](docs/deploy.md#9-checklist-uji-manual-ui--freighter)). Still simulated: the agents doing the work, and the x402 playground. See [Status](#-status) and the [audit report](docs/audit/agero-audit.md).
 
 ---
 
@@ -61,15 +61,15 @@ What actually works today (based on the [2026-10-25 audit](docs/audit/agero-audi
 | Contract v2 deployed to Testnet | ✅ Real | `CA5CMRJJ…LBDFB`, deployed 2026-10-29. CLI smoke test (register → create → deliver → complete → rate) passed with job_id `1`; contract balance back to 0 afterwards. Interface (14 functions) and WASM hash checked against the local build with stellar CLI. See [docs/deploy.md](docs/deploy.md) |
 | Contract v1 on Testnet (`CBEIINKJ…BW5X`) | ⚠️ Deprecated | Still live; built from the v1 source (commit `b706175`), which no longer matches `main`. 1 contract invocation at audit time. Has the issues listed in the audit (F02, F04–F07, F11–F14) |
 | Live web app (agero.vercel.app) | ✅ Real | Static React SPA |
-| UI calls the contract (`create_job` / `complete_job` / `refund_job`) | ⛔ Not yet | No Stellar SDK, RPC or contract ID in the frontend |
-| Lock / release / refund escrow in the UI | 🟡 Simulated | `setTimeout` + `localStorage`; reference IDs are random, not tx hashes |
-| Agent registration in the UI | 🟡 Simulated | Saved in the browser only |
-| 11 marketplace agents, ratings, job counts, reviews | 🟡 Simulated | Hardcoded sample data, marked "Sample" in the UI |
-| Agent work output | 🟡 Simulated | Static images and template text; no AI model is called |
-| x402 payment verification | 🟡 Simulated (live) | Live site always falls back to a browser simulation. The local gateway (`scripts/x402_simulator.js`) checks classic payments on Horizon but has a `MOCK_TX_*` bypass and is not linked to the escrow |
-| Freighter wallet | 🟡 Partial | Connects and reads the address (Testnet check). Transactions are not signed or sent |
-| Contract ratings | ⛔ Not yet (in UI) | v2: one 1–5 rating per Completed job, by that job's client (auth). v1 has no auth. The UI calls neither; text reviews live in `localStorage` |
-| Deadlines | 🟡 v2 contract only | Client picks a deadline (1 h – 30 d); live in v2 on Testnet, not in the UI |
+| UI reads the contract (registry, ratings, job counts, jobs) | ✅ Real | `@stellar/stellar-sdk` 17.4 over Soroban RPC: read-only simulations of `agent_count`, `agent_at`, `get_agent`, `job_count`, `get_job` (parallel). Checked against Testnet on 2026-10-29. RPC failures show an error with retry; there is no fallback to hardcoded data. Code in `frontend/src/chain/` |
+| UI writes to the contract (`create_job`, `complete_job`, `refund_job`, `rate_agent`) | 🟡 Implemented, manual test pending | Build → simulate → assemble → sign in Freighter → send → poll. Unit-tested helpers (stroops, status mapping, errors, deadlines), but not yet run end to end with Freighter. Checklist: [docs/deploy.md §9](docs/deploy.md#9-checklist-uji-manual-ui--freighter) |
+| Freighter wallet | 🟡 Implemented, manual test pending | Connects, rejects networks other than Testnet, checks the active account and signs the transactions above. Demo mode and the `localStorage` escrow were removed |
+| Deadlines in the UI | 🟡 Implemented, manual test pending | Client picks 1–720 hours; My Jobs shows deadline and 72 h review-window countdowns from ledger time and only the actions the contract accepts |
+| Marketplace agents | 🟡 Seed script ready, not run | The registry shows whatever is registered on v2 (today: the smoke-test agent). `scripts/seed-agents.ps1` registers the 11 sample agents with a `Sample agent -` description and a placeholder `https://example.invalid/...` endpoint; shown with a "Sample" badge |
+| Ratings | ✅ Real (read) / 🟡 write pending | Stars and counts come from the contract (one 1–5 rating per Completed job, by that job's client). Text reviews were removed: the contract stores only numbers |
+| Agent registration and delivery in the UI | ⛔ Not yet (phase 3b) | Agents use the stellar CLI (`register_agent`, `deliver_job`); the Developer page shows the commands |
+| Agent work output | 🟡 Simulated | Static sample images; no AI model is called and nobody delivers automatically |
+| x402 payment verification | 🟡 Simulated | The playground sends the mock reference `MOCK_TX_XLM` to the local gateway demo (`scripts/x402_simulator.js`) or simulates in the browser. Not linked to the escrow |
 | Dispute resolution | ⛔ None (by design) | v2 has no arbiter: after delivery the client has 72 h to approve, then anyone can release funds to the agent |
 | Escrow token restriction | 🟡 v2 contract only | v2 fixes the token to native XLM at deploy time (the Testnet v2 uses the native XLM SAC); v1 accepts any token |
 | Interactive 3D canvas | ✅ Real | HTML5 Canvas |
@@ -96,6 +96,8 @@ CBEIINKJWTVYY3WNJGWFWJECNLZHT2RA3YXATDLTGKZGFN5ZOMDRBW5X
 
 ## 🖼️ Screenshots
 
+> These screenshots were taken before phase 3a, when every transaction in the UI was simulated. They show the old Demo mode, sample reviews and the simulated escrow drawer, which are gone from the current UI.
+
 ### Homepage — Interactive 3D Holographic AI Core
 The landing page features a cursor-responsive 3D wireframe robot rendered on HTML5 Canvas, with orbiting particles and holographic scanlines.
 
@@ -104,14 +106,14 @@ The landing page features a cursor-responsive 3D wireframe robot rendered on HTM
 </p>
 
 ### AI Agent Marketplace
-Browse 11 sample AI agents across Text AI, Creative AI, and Utility categories. Listings, ratings and outputs are hardcoded sample data (static images).
+Browse AI agents by category. Since phase 3a the listings, prices, ratings and job counts are read from contract v2; images and categories are UI-only sample extras.
 
 <p align="center">
   <img src="docs/screenshots/02_marketplace.png" width="90%" alt="Marketplace" />
 </p>
 
 ### Agent Detail & Hire Flow
-View agent capabilities, features and sample reviews, then simulate locking escrow funds (the UI is not connected to the Soroban contract yet).
+Agent detail and the hire form. The screenshot shows the old simulated drawer; the current UI signs `create_job` in Freighter.
 
 <p align="center">
   <img src="docs/screenshots/03_agent_detail.png" width="45%" alt="Agent Detail" />
@@ -119,14 +121,14 @@ View agent capabilities, features and sample reviews, then simulate locking escr
 </p>
 
 ### How Agero Works — Connected M2M Timeline
-A visual step-by-step workflow showing the escrow lifecycle from wallet connection to fund release.
+A visual step-by-step workflow of the escrow lifecycle from wallet connection to fund release.
 
 <p align="center">
   <img src="docs/screenshots/06_how_it_works.png" width="90%" alt="How It Works" />
 </p>
 
 ### Wallet Integration & Developer Portal
-Connect via Freighter browser extension (address only, Testnet) or Demo mode. Register and manage your AI agents (simulated, stored in the browser).
+Old wallet dropdown (Demo mode has since been removed; Freighter on Testnet only) and the old simulated registration form (registration now happens with the stellar CLI until phase 3b).
 
 <p align="center">
   <img src="docs/screenshots/05_wallet_connect.png" width="45%" alt="Wallet Connect" />
@@ -141,40 +143,41 @@ Connect via Freighter browser extension (address only, Testnet) or Demo mode. Re
 ┌───────────────────────────────────────────────────────────────┐
 │                  Agero Frontend (React 19 + Vite 8)           │
 │                                                               │
-│  ┌───────────┐  ┌─────────────┐  ┌──────────────────────┐    │
-│  │  Homepage  │  │ Marketplace │  │  Developer Portal    │    │
-│  │ (3D Core) │  │ (11 Agents) │  │ (Register + Stats)   │    │
-│  └───────────┘  └─────────────┘  └──────────────────────┘    │
+│  ┌───────────┐  ┌─────────────┐  ┌──────────┐  ┌───────────┐  │
+│  │ Homepage  │  │ Marketplace │  │ My Jobs  │  │ Developer │  │
+│  │ (3D Core) │  │ (registry)  │  │ (escrow) │  │ (CLI help)│  │
+│  └───────────┘  └─────────────┘  └──────────┘  └───────────┘  │
 │                                                               │
-│        Freighter Wallet (address only) / Demo Mode            │
-│        Transactions simulated in localStorage                 │
-└────────────────────────┬──────────────────────────────────────┘
-                         ┊
-                         ┊  NOT CONNECTED YET (planned)
-                         ┊
-              ┌──────────▼──────────┐
-              │  Soroban Contract   │
-              │  v2 (WASM)          │
-              │  on Testnet         │
-              │  ─────────────────  │
-              │  register_agent     │
-              │  update_agent       │
-              │  create_job         │
-              │  deliver_job        │
-              │  complete_job       │
-              │  release_job        │
-              │  refund_job         │
-              │  rate_agent         │
-              │  get_job/get_agent  │
+│  src/chain: @stellar/stellar-sdk 17 + Freighter (Testnet)     │
+│  x402 playground: simulated, not linked to the escrow         │
+└───────────┬───────────────────────────────┬───────────────────┘
+            │ reads: simulateTransaction    │ writes: signed in Freighter
+            │ (no signature)                │ sendTransaction + poll
+            ▼                               ▼
+              ┌─────────────────────┐
+              │  Soroban RPC        │
+              │  (Testnet)          │
               └──────────┬──────────┘
                          │
               ┌──────────▼──────────┐
-              │  Stellar Testnet    │
-              │  (Horizon API)      │
+              │  Soroban Contract   │
+              │  v2 (WASM)          │
+              │  ─────────────────  │
+              │  register_agent  *  │
+              │  update_agent    *  │
+              │  create_job         │
+              │  deliver_job     *  │
+              │  complete_job       │
+              │  release_job     *  │
+              │  refund_job         │
+              │  rate_agent         │
+              │  get_job/get_agent  │
+              │  job/agent_count    │
+              │  agent_at           │
               └─────────────────────┘
 ```
 
-> The dotted link is not implemented: the frontend does not call the contract, Soroban RPC or Horizon yet.
+> `*` = not called by the UI yet (stellar CLI only). The UI calls `refund_job` as the client only.
 
 ---
 
@@ -182,13 +185,13 @@ Connect via Freighter browser extension (address only, Testnet) or Demo mode. Re
 
 | Feature | Description |
 |---|---|
-| **AI Agent Marketplace** (sample data) | 11 sample agents: Summarizer Bot, Image Generator Pro, Translation Bot XL, Code Auditor AI, Data Analyst Bot, Voice Cloner AI, Music Composer AI, SEO Optimizer Bot, Chatbot Assistant, Sentiment Analyst, Video Generator AI |
-| **Soroban Escrow** (contract only, v2 on Testnet) | v2 locks native XLM in `create_job` with a client-chosen deadline. The agent delivers a result hash; the client approves with `complete_job`, or after 72 h anyone can `release_job` to the agent. The client can refund only after the deadline if nothing was delivered; the agent can refund any time before payout. No arbiter. The UI does not call the contract yet |
-| **x402 Payment Protocol** (demo) | Payment header passed over HTTP to a local gateway demo; simulated on the live site |
+| **AI Agent Marketplace** (registry from contract v2) | Lists every agent registered on the contract. `scripts/seed-agents.ps1` registers 11 sample agents (Summarizer Bot, Image Generator Pro, Translation Bot XL, Code Auditor AI, Data Analyst Bot, Voice Cloner AI, Music Composer AI, SEO Optimizer Bot, Chatbot Assistant, Sentiment Analyst, Video Generator AI), marked "Sample", with placeholder endpoints |
+| **Soroban Escrow** (v2 on Testnet) | v2 locks native XLM in `create_job` with a client-chosen deadline. The agent delivers a result hash; the client approves with `complete_job`, or after 72 h anyone can `release_job` to the agent. The client can refund only after the deadline if nothing was delivered; the agent can refund any time before payout. No arbiter. The UI signs `create_job`, `complete_job`, `refund_job` (client) and `rate_agent` in Freighter; `deliver_job` and `release_job` are CLI only for now |
+| **x402 Payment Protocol** (simulated) | A mock payment reference is passed over HTTP to a local gateway demo, or simulated in the browser; not linked to the escrow |
 | **Interactive 3D Core** | Cursor-responsive holographic wireframe AI robot on HTML5 Canvas |
-| **Freighter Integration** (address only) | Connect a Freighter wallet on Testnet to read its address, or use built-in Demo mode. No transactions are signed yet |
+| **Freighter Integration** (Testnet) | Connect Freighter, check that it is on Testnet, and sign contract calls. Rejections, wrong network, low balance and failed transactions show a clear message |
 | **Liquid Glass UI** | Premium dark glassmorphic design with digital blueprint grid background |
-| **Rating System** (simulated) | Star ratings and text reviews stored in the browser. Contract v2 has `rate_agent` (stars only, one per Completed job, client auth) but the UI does not call it |
+| **Rating System** (contract v2) | One 1–5 star rating per Completed job, signed by that job's client with `rate_agent`. The UI shows the on-chain average and count; there are no text reviews |
 
 ---
 
@@ -198,8 +201,8 @@ Connect via Freighter browser extension (address only, Testnet) or Demo mode. Re
 
 - [Rust](https://rustup.rs/) with `wasm32` target
 - [Stellar CLI](https://developers.stellar.org/docs/tools/cli) v22+
-- [Node.js](https://nodejs.org/) v18+
-- [Freighter Wallet](https://freighter.app/) browser extension (optional)
+- [Node.js](https://nodejs.org/) v22.12+ (required by `@stellar/stellar-sdk` 17 and vitest 5)
+- [Freighter Wallet](https://freighter.app/) browser extension set to **Testnet** (needed to sign; browsing works without it)
 
 ### 1. Clone & Install
 
@@ -227,14 +230,25 @@ stellar keys generate agero-deployer --network testnet --fund
 .\scripts\smoke-testnet.ps1 -ContractId <CONTRACT_ID> -Client agero-client -Agent agero-agent
 ```
 
-### 4. Run Frontend Locally
+### 4. Seed the sample agents (optional)
+
+Registers the 11 sample agents on v2 from 11 new stellar CLI identities (see [docs/deploy.md §7](docs/deploy.md#7-seed-11-agen-sampel-fase-3a)):
+
+```powershell
+.scriptsseed-agents.ps1 -ContractId CA5CMRJJHCJZIKVGFIOEV3BGVNTQVOI6KYV4S3GOROHUS7HLUUYLBDFB
+```
+
+### 5. Run Frontend Locally
+
+The frontend defaults to contract v2 on Testnet. To point it elsewhere, copy `frontend/.env.example` to `frontend/.env.local` and edit the `VITE_*` values (all public; never put a secret key there). Details: [docs/deploy.md §8](docs/deploy.md#8-konfigurasi-frontend-vite_).
 
 ```bash
 cd frontend
 npm run dev
+npm test        # unit tests (vitest)
 ```
 
-### 5. Build for Production
+### 6. Build for Production
 
 ```bash
 cd frontend
@@ -256,18 +270,22 @@ agero/
 │       └── Cargo.toml
 ├── frontend/
 │   ├── public/                  # Agent sample images & favicon
+│   ├── .env.example             # VITE_* chain config (Testnet defaults)
 │   ├── src/
-│   │   ├── App.jsx              # Main React SPA (1200+ lines)
-│   │   ├── index.css            # Dark liquid glass theme system
-│   │   └── utils/wallet.js     # Freighter wallet integration
+│   │   ├── App.jsx              # Pages: home, marketplace, agent detail, developer
+│   │   ├── chain/               # config, rpc (reads/writes), wallet (Freighter), jobs, units, errors + tests
+│   │   ├── components/          # HireModal, MyJobs, TxProgress, Playground (simulated x402), ui
+│   │   ├── data/sample-agents.json  # Sample agents for the seed script + UI-only images/categories
+│   │   └── index.css            # Dark liquid glass theme system
 │   └── index.html
 ├── scripts/
 │   ├── x402_simulator.js       # Local x402 payment gateway simulator
 │   ├── deploy-testnet.ps1      # Build + deploy contract v2
-│   └── smoke-testnet.ps1       # register → create → deliver → complete → rate
+│   ├── smoke-testnet.ps1       # register → create → deliver → complete → rate
+│   └── seed-agents.ps1         # Register the 11 sample agents (idempotent)
 ├── docs/
 │   ├── contract-v2.md           # State machine, events, errors, audit → test map
-│   ├── deploy.md                # Testnet deploy steps
+│   ├── deploy.md                # Testnet deploy, seed, frontend config, manual UI checklist
 │   ├── audit/                   # Audit report + phase screenshots
 │   ├── screenshots/             # App screenshots for README
 │   └── *.md                     # Implementation plans
@@ -365,7 +383,8 @@ The deprecated v1 contract (`CBEIINKJ…BW5X`) has a different API (`token` para
 | **Icons** | Lucide React |
 | **3D Graphics** | HTML5 Canvas API |
 | **Blockchain** | Stellar Testnet + Horizon |
-| **Wallet** | Freighter Browser Extension (address only) |
+| **Wallet** | Freighter Browser Extension (`@stellar/freighter-api` 6.0.1, signs Soroban transactions) |
+| **Stellar SDK** | `@stellar/stellar-sdk` 17.4 (Soroban RPC: simulate, assemble, send, poll) |
 | **Payment Protocol** | x402 (local gateway demo) |
 
 ---
@@ -384,7 +403,7 @@ Client                    Smart Contract                 AI Agent Developer
   ├── rate_agent ─────────────►│── store rating               │
 ```
 
-Contract v2 flow (deployed on Testnet; exercised once by the CLI smoke test). The web UI simulates these steps and does not call any contract.
+Contract v2 flow (deployed on Testnet; exercised once by the CLI smoke test). In the web UI the client signs `create_job`, `complete_job`, `refund_job` and `rate_agent` in Freighter; the agent still runs `deliver_job` from the stellar CLI.
 - **Token:** native XLM, fixed at deploy time.
 - **Refund:** the client can refund only after the deadline if nothing was delivered; the agent can refund any time before payout. There is no arbiter.
 - **Rating:** one 1–5 rating per Completed job, by that job's client.

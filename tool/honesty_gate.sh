@@ -8,6 +8,13 @@ BANNED_PHRASES=(
   "real transaction hash"
   "registered on-chain"
   "refunded on dispute"
+  # Phase 3a: escrow, registry and ratings are real on Testnet; agent work and x402 are still simulated
+  "verified on-chain"
+  "on Mainnet"
+  "x402 payment verified"
+  "agent output verified"
+  "guaranteed payment"
+  "trustless"
 )
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

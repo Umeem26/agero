@@ -2,7 +2,7 @@
 
 Sumber: [`contracts/agero-contract/src/lib.rs`](../contracts/agero-contract/src/lib.rs). Tes: [`src/test.rs`](../contracts/agero-contract/src/test.rs) + [`src/test/`](../contracts/agero-contract/src/test/).
 
-Status: kode dan tes selesai (59/59 tes lulus). **Di-deploy ke Testnet pada 2026-10-29** sebagai `CA5CMRJJHCJZIKVGFIOEV3BGVNTQVOI6KYV4S3GOROHUS7HLUUYLBDFB`; smoke test CLI lulus (job_id 1). Langkah dan hasil: [deploy.md](deploy.md). Frontend belum memanggil kontrak ini. Kontrak v1 (`CBEIINKJ…BW5X`) tetap ada di testnet dan dianggap deprecated.
+Status: kode dan tes selesai (59/59 tes lulus). **Di-deploy ke Testnet pada 2026-10-29** sebagai `CA5CMRJJHCJZIKVGFIOEV3BGVNTQVOI6KYV4S3GOROHUS7HLUUYLBDFB`; smoke test CLI lulus (job_id 1). Langkah dan hasil: [deploy.md](deploy.md). Sejak Fase 3a frontend membaca kontrak ini (registry, rating, job) dan membangun `create_job`, `complete_job`, `refund_job` (sebagai klien) dan `rate_agent` untuk ditandatangani di Freighter; jalur tulis belum diuji end to end (checklist: [deploy.md bagian 9](deploy.md#9-checklist-uji-manual-ui--freighter)). `deliver_job`, `release_job`, `register_agent` dan `update_agent` belum dipanggil UI. Kontrak v1 (`CBEIINKJ…BW5X`) tetap ada di testnet dan dianggap deprecated.
 
 Keputusan desain (Umem, Fase 2):
 - Tanpa arbiter. Setelah agen deliver, klien punya 72 jam untuk `complete_job`; sesudahnya siapa saja boleh `release_job`.

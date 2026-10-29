@@ -87,7 +87,7 @@ Setelah deploy dan smoke test berhasil:
 
 1. Di tabel **Status** README, ubah baris `Contract v2 deployed to Testnet` dari `⛔ Not yet` menjadi `✅ Real` dan isi kolom catatan dengan contract ID baru, tanggal, dan hasil smoke test (job ID).
 2. Di bagian **Contract Address (Testnet)**, tambahkan blok `v2` dengan contract ID baru dan tautan stellar.expert. Biarkan blok `v1 (deprecated)`.
-3. Jangan ubah baris `UI calls the contract`: tetap `⛔ Not yet` sampai frontend benar-benar memanggil kontrak.
+3. (Sejak Fase 3a baris `UI calls the contract` dipecah menjadi baris baca dan tulis; lihat bagian 9 untuk kapan baris tulis boleh menjadi `✅ Real`.)
 4. Jalankan pemeriksaan, lalu commit:
 
 ```powershell
@@ -156,3 +156,52 @@ git commit -m "docs: record seeded sample agents"
 <!-- seed-agents:start -->
 Belum dijalankan.
 <!-- seed-agents:end -->
+
+## 8. Konfigurasi frontend (`VITE_*`)
+
+Frontend membaca konfigurasi chain dari variabel Vite. Semua punya default Testnet di [`frontend/src/chain/config.js`](../frontend/src/chain/config.js), jadi `npm run dev` dan build Vercel jalan tanpa `.env`. Untuk mengganti, salin `frontend/.env.example` menjadi `frontend/.env.local` (di-ignore git) atau isi Environment Variables di Vercel, lalu build ulang.
+
+| Variabel | Default | Arti |
+|---|---|---|
+| `VITE_CONTRACT_ID` | `CA5CMRJJHCJZIKVGFIOEV3BGVNTQVOI6KYV4S3GOROHUS7HLUUYLBDFB` | Kontrak Agero v2 |
+| `VITE_RPC_URL` | `https://soroban-testnet.stellar.org` | Soroban RPC |
+| `VITE_NETWORK_PASSPHRASE` | `Test SDF Network ; September 2015` | Harus sama dengan jaringan di Freighter; selain itu UI menolak menandatangani |
+| `VITE_XLM_SAC` | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` | SAC XLM native: saldo di form hire dan pembeda error token vs error kontrak. Tidak dibaca dari kontrak (tidak ada getter `token()`) |
+| `VITE_EXPLORER_URL` | `https://stellar.expert/explorer/testnet` | Tautan tx, kontrak, dan akun |
+
+Nilai `VITE_*` masuk ke bundle browser dan bersifat publik. Jangan pernah menaruh secret key atau seed phrase di sana. Alamat yang tidak valid memunculkan banner "Configuration error" dan UI tidak memanggil RPC.
+
+Versi yang dipakai: `@stellar/stellar-sdk` 17.4.0 (Testnet di protokol 29 saat ditulis), `@stellar/freighter-api` 6.0.1, Node 22.12+.
+
+## 9. Checklist uji manual (UI + Freighter)
+
+Belum pernah dijalankan. Sampai semua langkah 1–10 lulus, baris "UI writes to the contract" dan "Freighter wallet" di README tetap `🟡 Implemented, manual test pending`. Catat job ID dan hash tx di tabel hasil di bawah.
+
+Persiapan:
+- Freighter terpasang, jaringan **Testnet**, akun didanai (Freighter → Fund with Friendbot, atau `https://friendbot.stellar.org/?addr=<G...>`). Akun Freighter harus berbeda dari semua identity agen.
+- Agen tersedia: jalankan bagian 7 (seed). Tanpa seed, registry hanya berisi `Smoke Test Agent` (harga 1 XLM, pemilik identity `agero-agent`); langkah di bawah tetap bisa memakai agen itu dengan `--source-account agero-agent`.
+- `cd frontend; npm install; npm run dev`, buka `http://localhost:5173`.
+
+| # | Langkah | Hasil yang diharapkan |
+|---|---|---|
+| 1 | Buka Marketplace tanpa wallet | Skeleton sebentar, lalu kartu agen. Jumlah = `stellar contract invoke --id <CONTRACT_ID> --source-account agero-client --network testnet --send=no -- agent_count`. Agen seed berbadge "Sample"; harga/rating sama dengan `get_agent` |
+| 2 | Isi `VITE_RPC_URL=https://rpc.invalid` di `.env.local`, restart dev server | Kartu error "Could not read from Stellar Testnet" + tombol Try again, tanpa data agen. Hapus baris itu dan restart |
+| 3 | Freighter di Mainnet/Futurenet → Connect Wallet | Pesan "Freighter is on … Switch Freighter to Testnet". Ganti ke Testnet → connect berhasil, alamat tampil |
+| 4 | Buka agen (paling murah: Translation Bot XL, 50 XLM) → Hire. Coba jumlah di bawah harga, deadline `0` dan `721`, jumlah lebih besar dari saldo | Pesan error di form untuk masing-masing; tidak ada popup Freighter |
+| 5 | Jumlah = harga, deadline `1` → Review → Sign → **Reject** di Freighter | "Request rejected in Freighter. Nothing was signed or sent." `job_count` tidak berubah |
+| 6 | Ulangi, kali ini Approve (job A) | Drawer: simulate → sign → submit → confirm → "Confirmed on Stellar Testnet", `Job #N created`, tautan tx membuka stellar.expert dengan status sukses. Saldo turun ≈ jumlah + fee |
+| 7 | My Jobs | Job A `Pending`, countdown tenggat ≈ 1 jam, tanpa tombol Approve/Refund/Rate (hanya "Test API (sim)") |
+| 8 | Agen deliver lewat CLI: `stellar contract invoke --id <CONTRACT_ID> --source-account agero-seed-03 --network testnet -- deliver_job --job_id <N> --result_hash 0000000000000000000000000000000000000000000000000000000000000001` (identity sesuai agen yang di-hire) → Refresh | Status `Delivered`, countdown jendela review ≈ 72 jam, tombol "Approve & pay" |
+| 9 | Approve & pay → sign | `Completed`; detail agen: Completed jobs +1. Muncul tombol Rate |
+| 10 | Rate 4 bintang → sign | "You rated this job", tombol Rate hilang; rating count agen +1 dan rata-rata berubah. `get_job` → `"rated": true` |
+| 11 | Job B: hire dengan deadline 1 jam, jangan deliver. Sebelum tenggat lewat | Tidak ada tombol Refund |
+| 12 | Setelah tenggat lewat (> 1 jam), Refresh → Refund → sign | `Refunded`, saldo kembali (dikurangi fee) |
+| 13 | Buka My Jobs di dua tab. Tab 1: Approve & pay job yang Delivered. Tab 2 (belum di-refresh): klik Approve & pay pada job yang sama | Error dari simulasi: "That action is not allowed in the job's current status…", tanpa popup Freighter |
+| 14 | Setelah connect, ganti akun aktif di Freighter, lalu klik aksi apa pun | "The active Freighter account changed. Reconnect the wallet and try again." |
+| 15 | "Test API (sim)" pada job Pending/Delivered | Konsol berlabel simulasi (`[sim]`), header `MOCK_TX_XLM`; tidak ada transaksi |
+
+Hasil (isi setelah uji):
+
+| Tanggal | Akun klien (publik) | Job A | Job B | Hash tx create/complete/rate/refund | Lulus |
+|---|---|---|---|---|---|
+| | | | | | |
