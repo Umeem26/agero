@@ -211,7 +211,7 @@ Persiapan:
 | 5 | Jumlah = harga, deadline `1` → Review → Sign → **Reject** di Freighter | "Request rejected in Freighter. Nothing was signed or sent." `job_count` tidak berubah |
 | 6 | Ulangi, kali ini Approve (job A) | Drawer: simulate → sign → submit → confirm → "Confirmed on Stellar Testnet", `Job #N created`, tautan tx membuka stellar.expert dengan status sukses. Saldo turun ≈ jumlah + fee |
 | 7 | My Jobs | Job A `Pending`, countdown tenggat ≈ 1 jam, tanpa tombol Approve/Refund/Rate (hanya "Test API (sim)") |
-| 8 | Agen deliver lewat CLI: `stellar contract invoke --id <CONTRACT_ID> --source-account agero-seed-03 --network testnet -- deliver_job --job_id <N> --result_hash 0000000000000000000000000000000000000000000000000000000000000001` (identity sesuai agen yang di-hire) → Refresh | Status `Delivered`, countdown jendela review ≈ 72 jam, tombol "Approve & pay" |
+| 8 | Agen deliver lewat CLI: `stellar contract invoke --id <CONTRACT_ID> --source-account agero-seed-03 --network testnet -- deliver_job --job_id <N> --result_hash 0000000000000000000000000000000000000000000000000000000000000001` (identity sesuai agen yang di-hire; untuk agen milik akun Freighter sendiri bisa lewat Agent Dashboard, bagian 10) → Refresh | Status `Delivered`, countdown jendela review ≈ 72 jam, tombol "Approve & pay" |
 | 9 | Approve & pay → sign | `Completed`; detail agen: Completed jobs +1. Muncul tombol Rate |
 | 10 | Rate 4 bintang → sign | "You rated this job", tombol Rate hilang; rating count agen +1 dan rata-rata berubah. `get_job` → `"rated": true` |
 | 11 | Job B: hire dengan deadline 1 jam, jangan deliver. Sebelum tenggat lewat | Tidak ada tombol Refund |
@@ -223,5 +223,42 @@ Persiapan:
 Hasil (isi setelah uji):
 
 | Tanggal | Akun klien (publik) | Job A | Job B | Hash tx create/complete/rate/refund | Lulus |
+|---|---|---|---|---|---|
+| | | | | | |
+
+## 10. Checklist uji manual 3b (dashboard agen)
+
+Belum pernah dijalankan. Sampai langkah 1–13 dan 15–17 lulus, baris "Agent dashboard" dan "Result hash and client file check" di README tetap `🟡 Implemented, manual test pending`. Semua transaksi di bawah memakai pipeline yang sama dengan bagian 9 (`invoke` di `frontend/src/chain/rpc.js`). Agero tidak menjalankan agen: "hasil" di sini hanyalah file uji yang dibuat sendiri.
+
+Persiapan:
+- Dua akun di Freighter (Testnet, didanai): **A** = klien (boleh akun bagian 9), **B** = pemilik agen baru yang **belum** punya agen. Ganti akun di Freighter lalu Disconnect + Connect lagi di UI (UI menolak tanda tangan bila akun aktif berubah).
+- Buat file uji, mis. `hasil.txt` berisi `halo agero`, dan hitung hash pembanding: `Get-FileHash .\hasil.txt -Algorithm SHA256` (PowerShell; huruf besar) atau `sha256sum hasil.txt`.
+- `cd frontend; npm run dev`, buka `http://localhost:5173` → **Agent Dashboard**.
+
+| # | Langkah | Hasil yang diharapkan |
+|---|---|---|
+| 1 | Agent Dashboard tanpa wallet | Kotak "Agero does not run your agent…" dan tombol Connect Freighter; tidak ada data |
+| 2 | Connect akun B. Isi form daftar dengan harga `0`, lalu `1.12345678`, nama kosong, API URL `ftp://x` | Pesan error di form untuk masing-masing; tidak ada popup Freighter |
+| 3 | Nama `Uji 3b`, deskripsi bebas, API URL kosong, harga `1` → Sign → **Reject** di Freighter | "Request rejected in Freighter. Nothing was signed or sent." `agent_count` tidak berubah |
+| 4 | Ulangi, Approve | Drawer simulate → sign → submit → confirm, "Uji 3b registered at 1 XLM per job". Dashboard menampilkan profil; Marketplace menampilkan agen baru tanpa badge Sample; `get_agent --id <B>` sama |
+| 5 | Tab kedua yang dibuka sebelum langkah 4 (masih form daftar) → submit lagi | Simulasi gagal "This wallet already has a registered agent…", tanpa popup; dashboard memuat ulang dan menampilkan profil |
+| 6 | Edit profile → harga `2`, deskripsi baru → sign | Profil dan Marketplace berubah; `total_jobs` dan rating tidak berubah |
+| 7 | Buka detail agen B dengan akun B, lalu dengan akun A | Akun B: tombol Hire nonaktif + teks "This is your agent, so hiring is disabled…". Akun A: Hire aktif |
+| 8 | Akun A: hire agen B, jumlah `2`, deadline `1` (job C). Akun B: Agent Dashboard | Incoming jobs: job C `Pending`, countdown tenggat ≈ 1 jam, hanya tombol Deliver dan Refund client (tanpa Release) |
+| 9 | Deliver job C: tab "Paste hash" dengan 63 karakter, lalu tab "Choose file" → `hasil.txt` → centang konfirmasi → sign | 63 karakter: pesan validasi, tombol sign nonaktif. File: hash sama dengan `Get-FileHash` (huruf kecil); tombol sign aktif hanya setelah dicentang. Sesudah confirm: `Delivered`, countdown review ≈ 72 jam, tombol Deliver hilang, Release belum ada, Refund client tetap. `get_job --job_id <C>` → `result_hash` sama |
+| 10 | Akun A: My Jobs → job C → "Verify delivered file" → `hasil.txt`, lalu file lain (atau `hasil.txt` dengan satu karakter diubah) | Hash dari kontrak tampil. `hasil.txt` → "Match"; file lain → "No match". DevTools → Network: tidak ada request yang membawa isi file |
+| 11 | Akun A: Approve & pay job C. Akun B: Refresh dashboard | Job C `Completed`; "Paid to you" naik 2 XLM; Completed jobs +1 |
+| 12 | Job D: akun A hire agen B. Akun B: Refund client → **Cancel**, lalu Refund client → Refund in Freighter → sign | Dialog menyebut jumlah, alamat klien, dan bahwa refund tidak bisa dibatalkan. Cancel: tidak ada popup. Sign: `Refunded`, saldo klien kembali sebesar jumlah job |
+| 13 | Job E: hire (A), deliver (B), lalu Refund client (B) saat `Delivered` | `Refunded` (agen boleh refund job Delivered); dialog menyebut bahwa agen tidak dibayar walau sudah deliver |
+| 14 | *(Opsional, butuh ≥ 72 jam)* Job F: hire + deliver. Sebelum 72 jam, lalu ≥ 72 jam sesudah `delivered_at` (waktu ledger) | Sebelum: tidak ada tombol Release. Sesudah: "Release payment" muncul → sign → `Completed`, "Paid to you" naik |
+| 15 | `VITE_RPC_URL=https://rpc.invalid` di `.env.local`, restart dev server, buka Agent Dashboard | Kartu error "Could not read from Stellar Testnet" + Try again. Hapus baris itu dan restart |
+| 16 | Freighter ke Mainnet, lalu klik Deliver/Refund/Edit profile → sign | "Freighter is on … Switch Freighter to Testnet", tidak ada transaksi |
+| 17 | Dashboard di dua tab. Tab 1: deliver job G. Tab 2 (belum di-refresh): Deliver job G | Simulasi gagal "This job can no longer be delivered…", tanpa popup Freighter |
+
+Langkah 14 sengaja opsional: aturan release dicakup unit test frontend `agentActions` (`frontend/src/chain/jobs.test.js`, termasuk batas tepat `delivered_at + 259200` boleh dan satu detik sebelumnya tidak) dan tes kontrak `flow::auto_release_rejected_before_review_window` / `flow::auto_release_by_third_party_after_review_window`. Bila dijalankan, isi kolom di bawah. Waktu di UI adalah perkiraan waktu ledger (close time ledger terakhir + detik yang berlalu); bila tombol muncul beberapa detik terlalu cepat, simulasi menolak dengan "Too early: the 72-hour review window…" tanpa popup.
+
+Hasil (isi setelah uji):
+
+| Tanggal | Akun agen B (publik) | Job C / D / E | Hash tx register/update/deliver/refund (agen) | Release (opsional) | Lulus |
 |---|---|---|---|---|---|
 | | | | | | |

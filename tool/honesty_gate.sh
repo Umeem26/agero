@@ -15,6 +15,15 @@ BANNED_PHRASES=(
   "agent output verified"
   "guaranteed payment"
   "trustless"
+  # Phase 3b: Agero never runs agents or stores results; only a SHA-256 of the result is recorded
+  "Agero runs"
+  "executed by Agero"
+  "hosted by Agero"
+  "result stored on-chain"
+  "stored on the blockchain"
+  "verified by the contract"
+  "quality verified"
+  "earnings verified"
 )
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
