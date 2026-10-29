@@ -109,6 +109,8 @@ git commit -m "docs: record contract v2 testnet deployment"
 | Saldo akhir | kontrak `0`; klien -10502769 stroop (1 XLM escrow + fee); agen +9409292 stroop (1 XLM dikurangi fee `register_agent` dan `deliver_job`) |
 | CLI | stellar 27.0.0, Windows PowerShell 5.1 |
 
+`CDAAJ3NHPDK3FHQBOO42UKYZUNLTDJP7WVXAFKSEOYNRZZGQCA4SON5W` adalah hasil deploy ganda yang tidak dipakai; kontrak v2 yang dipakai hanya `CA5CM…` di atas.
+
 Pemeriksaan read-only sesudahnya (tanpa transaksi; `--send=no` hanya simulasi):
 - `stellar contract info interface --id <CONTRACT_ID> --network testnet` memuat 14 fungsi: `__constructor`, `register_agent`, `update_agent`, `create_job`, `deliver_job`, `complete_job`, `release_job`, `refund_job`, `rate_agent`, `get_agent`, `get_job`, `job_count`, `agent_count`, `agent_at`. Sama dengan `contracts/agero-contract/src/lib.rs`.
 - `stellar contract fetch --id <CONTRACT_ID> --network testnet` menghasilkan WASM dengan SHA-256 yang sama dengan hash di atas dan dengan build lokal.
@@ -130,7 +132,9 @@ Satu-satunya koreksi terhadap dokumen sebelumnya: `status` di output `get_job` b
 
 ## 7. Seed 11 agen sampel (Fase 3a)
 
-Registry di UI dibaca dari kontrak. Agar marketplace tidak kosong, [`scripts/seed-agents.ps1`](../scripts/seed-agents.ps1) mendaftarkan 11 agen sampel dari [`frontend/src/data/sample-agents.json`](../frontend/src/data/sample-agents.json) (data yang sama dengan sampel lama di `App.jsx`). Skrip ini dijalankan oleh Umem; belum pernah dijalankan ke Testnet. Status pengujian: diuji di Windows PowerShell 5.1 memakai shim `stellar` palsu (offline, tanpa identity sungguhan): run pertama membuat 11 identity, mencoba ulang friendbot yang gagal sekali, mendaftarkan 11 agen, dan menulis ringkasan; run kedua tidak memanggil `keys generate`, `keys fund`, maupun `register_agent`.
+Registry di UI dibaca dari kontrak. Agar marketplace tidak kosong, [`scripts/seed-agents.ps1`](../scripts/seed-agents.ps1) mendaftarkan 11 agen sampel dari [`frontend/src/data/sample-agents.json`](../frontend/src/data/sample-agents.json) (data yang sama dengan sampel lama di `App.jsx`). Sudah dijalankan ke Testnet pada 2026-10-29 (hasil di bawah). Run pertama berhenti di `agero-seed-06` dengan `client error (SendRequest)` (error jaringan ke RPC; kontrak tidak membatasi panjang string, dan agen yang sama terdaftar tanpa retry di run berikutnya), lalu skrip diberi retry dan run ulang melengkapi 06–11.
+
+Status pengujian: diuji di Windows PowerShell 5.1 memakai shim `stellar` palsu (offline): error sementara (`503`, `SendRequest`, friendbot `502`, timeout saat submit padahal transaksi sudah masuk) diulang lalu sukses tanpa mendaftar dua kali; error kontrak (`Error(Contract, #6)`) dan argumen salah tidak diulang dan menghentikan skrip; RPC mati saat cek akun dicoba 4 kali (jeda 3/6/12 detik) lalu berhenti tanpa memanggil friendbot; run kedua tidak memanggil `keys generate`, `keys fund`, maupun `register_agent`.
 
 ```powershell
 .\scripts\seed-agents.ps1 -ContractId CA5CMRJJHCJZIKVGFIOEV3BGVNTQVOI6KYV4S3GOROHUS7HLUUYLBDFB
@@ -138,10 +142,12 @@ Registry di UI dibaca dari kontrak. Agar marketplace tidak kosong, [`scripts/see
 
 Yang dilakukan untuk setiap agen ke-NN (01..11):
 1. Identity stellar CLI `agero-seed-NN`: dibuat dengan `stellar keys generate` bila belum ada. Kuncinya hanya ada di keystore stellar CLI di mesin yang menjalankan skrip.
-2. Friendbot: `stellar keys fund` hanya bila akun belum ada di jaringan, dengan retry (jeda 5, 10, 15 detik).
+2. Friendbot: `stellar keys fund` hanya bila `stellar ledger entry fetch account` mengembalikan daftar entri kosong. Bila pengecekan itu sendiri gagal (RPC error), skrip tidak menganggap akun belum didanai: ia mengulang lalu berhenti.
 3. `register_agent` dengan nama dan harga dari data sampel (XLM → stroop, mis. 100 XLM = `1000000000`). Deskripsi on-chain diawali `Sample agent - `, sehingga UI menampilkan badge "Sample". `api_url` = `https://example.invalid/agero-sample/<slug>`: domain `.invalid` tidak pernah ada, jadi tidak ada klaim layanan yang berjalan.
 
 Idempoten: identity yang ada dipakai ulang, akun yang sudah ada tidak didanai ulang, agen yang sudah terdaftar dilewati (`already registered`). Harga agen yang sudah terdaftar tidak diubah; untuk itu perlu `update_agent`.
+
+Retry: setiap panggilan `stellar` dicoba hingga `-Retries` kali (default 4, jeda 3/6/12 detik) hanya untuk error sementara (`SendRequest`, `Connect`, timeout, koneksi putus, `429`, `5xx`). Error kontrak (`Error(Contract, #N)`) dan argumen salah tidak diulang; skrip mencetak output CLI lengkap lalu berhenti. Sebelum mengirim ulang `register_agent` atau friendbot, skrip memeriksa dulu apakah percobaan sebelumnya sudah masuk. Ada jeda 3 detik antar-agen (`-AgentDelaySeconds`). Untuk mencoba satu agen saja: `-Only 6 -Retries 1` (ringkasan di bawah tidak ditulis bila `-Only` dipakai).
 
 Biaya: setiap identity seed membayar fee `register_agent` dari saldo friendbot-nya sendiri. Akun Umem tidak dipakai.
 
@@ -154,7 +160,21 @@ git commit -m "docs: record seeded sample agents"
 ```
 
 <!-- seed-agents:start -->
-Belum dijalankan.
+Terakhir dijalankan: 2026-10-29, kontrak `CA5CMRJJHCJZIKVGFIOEV3BGVNTQVOI6KYV4S3GOROHUS7HLUUYLBDFB`, jaringan `testnet`. `agent_count` sesudahnya: 12 (11 agen seed di tabel ini; selisihnya agen lain di kontrak, mis. agen smoke test).
+
+| # | Identity | Alamat publik | Nama | Harga (XLM) |
+|---|---|---|---|---|
+| 1 | `agero-seed-01` | `GAKJ36VRP6GJASL7QCTOPWEYUA46A5Z7OMLOITJVU4DWNAOVAAKF52FA` | Summarizer Bot | 100 |
+| 2 | `agero-seed-02` | `GDHXLIXLY5AAVDFWQGRUL5O6I77JDSBWT2GPLSXOJ3VCNKU4B6GPB6IV` | Image Generator Pro | 500 |
+| 3 | `agero-seed-03` | `GDXJRSKN3NW5FMSGOEO4PUQGCXESUIFYTD6WXH3MYVCIQ5RBZUOWMRHV` | Translation Bot XL | 50 |
+| 4 | `agero-seed-04` | `GC5PCPVYPMXDKK5L7Z6UHSLVXOB5D36KYXSXBPL5NDC7TZIMKAPWDWSN` | Code Auditor AI | 800 |
+| 5 | `agero-seed-05` | `GANFCCQJ2TZ6EJULZQBWV6F7CMDYG33A4KPZO52AIL2EJOFMVOL2JUMZ` | Data Analyst Bot | 300 |
+| 6 | `agero-seed-06` | `GB6WNFM4M4RZXRSMFUOTWDNSQ5XIYRBFN36OZUHI3PIDFYJVUFWX5WFF` | Voice Cloner AI | 600 |
+| 7 | `agero-seed-07` | `GCKTHXITHFQ27EZVPW3TRBRULVCYWW3GCZWNPZ4KNZEHJZPURQ3AQL5D` | Music Composer AI | 400 |
+| 8 | `agero-seed-08` | `GB3IFMFU5XBV2575WHWDJCRMINF7O2OL4CDEJMHUIGNECOA52FPADSZ6` | SEO Optimizer Bot | 200 |
+| 9 | `agero-seed-09` | `GBSRD6S452TOJMCUSKKGVXZ3LGG6REHOV2CYB44WOOSDNNJBF6KTFRX4` | Chatbot Assistant | 250 |
+| 10 | `agero-seed-10` | `GCSAW7NGVC4JUZ4DGPHFP5CT2PSTLGL5RXS5KQR2F5S7N4FM72FPC5NE` | Sentiment Analyst | 150 |
+| 11 | `agero-seed-11` | `GASRSNDFFD4THL3VOQ6V3FQTZQ5GOZ77MOVLAIDRQTZ3VHXJ3TB45EAR` | Video Generator AI | 700 |
 <!-- seed-agents:end -->
 
 ## 8. Konfigurasi frontend (`VITE_*`)

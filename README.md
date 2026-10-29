@@ -65,7 +65,7 @@ What actually works today (based on the [2026-10-25 audit](docs/audit/agero-audi
 | UI writes to the contract (`create_job`, `complete_job`, `refund_job`, `rate_agent`) | 🟡 Implemented, manual test pending | Build → simulate → assemble → sign in Freighter → send → poll. Unit-tested helpers (stroops, status mapping, errors, deadlines), but not yet run end to end with Freighter. Checklist: [docs/deploy.md §9](docs/deploy.md#9-checklist-uji-manual-ui--freighter) |
 | Freighter wallet | 🟡 Implemented, manual test pending | Connects, rejects networks other than Testnet, checks the active account and signs the transactions above. Demo mode and the `localStorage` escrow were removed |
 | Deadlines in the UI | 🟡 Implemented, manual test pending | Client picks 1–720 hours; My Jobs shows deadline and 72 h review-window countdowns from ledger time and only the actions the contract accepts |
-| Marketplace agents | 🟡 Seed script ready, not run | The registry shows whatever is registered on v2 (today: the smoke-test agent). `scripts/seed-agents.ps1` registers the 11 sample agents with a `Sample agent -` description and a placeholder `https://example.invalid/...` endpoint; shown with a "Sample" badge |
+| Marketplace agents | 🟡 Sample data, seeded on Testnet | The registry shows whatever is registered on v2: 12 agents since 2026-10-29 (the smoke-test agent + 11 sample agents, each checked with `get_agent` against `sample-agents.json`; owners in [docs/deploy.md §7](docs/deploy.md#7-seed-11-agen-sampel-fase-3a)). `scripts/seed-agents.ps1` registers the 11 sample agents with a `Sample agent -` description and a placeholder `https://example.invalid/...` endpoint; shown with a "Sample" badge |
 | Ratings | ✅ Real (read) / 🟡 write pending | Stars and counts come from the contract (one 1–5 rating per Completed job, by that job's client). Text reviews were removed: the contract stores only numbers |
 | Agent registration and delivery in the UI | ⛔ Not yet (phase 3b) | Agents use the stellar CLI (`register_agent`, `deliver_job`); the Developer page shows the commands |
 | Agent work output | 🟡 Simulated | Static sample images; no AI model is called and nobody delivers automatically |
@@ -235,7 +235,7 @@ stellar keys generate agero-deployer --network testnet --fund
 Registers the 11 sample agents on v2 from 11 new stellar CLI identities (see [docs/deploy.md §7](docs/deploy.md#7-seed-11-agen-sampel-fase-3a)):
 
 ```powershell
-.scriptsseed-agents.ps1 -ContractId CA5CMRJJHCJZIKVGFIOEV3BGVNTQVOI6KYV4S3GOROHUS7HLUUYLBDFB
+.\scripts\seed-agents.ps1 -ContractId CA5CMRJJHCJZIKVGFIOEV3BGVNTQVOI6KYV4S3GOROHUS7HLUUYLBDFB
 ```
 
 ### 5. Run Frontend Locally
