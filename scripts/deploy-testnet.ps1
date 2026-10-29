@@ -44,9 +44,9 @@ function Invoke-Stellar([string[]]$CliArgs) {
 }
 
 function Get-LastLine($out) {
-    $lines = @($out) | Where-Object { $_ -ne $null -and "$_".Trim() -ne "" }
+    $lines = @(@($out) | Where-Object { $_ -ne $null -and "$_".Trim() -ne "" })
     if ($lines.Count -eq 0) { throw "stellar CLI returned no output" }
-    return ($lines | Select-Object -Last 1).ToString().Trim().Trim('"')
+    return $lines[-1].ToString().Trim().Trim('"')
 }
 
 Write-Host "== 1/4 Build contract"

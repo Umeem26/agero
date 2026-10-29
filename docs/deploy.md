@@ -14,6 +14,8 @@ Semua perintah dijalankan dari root repo (`agero/`) di **PowerShell** (linker Gi
 
 Bila PowerShell menolak menjalankan skrip lokal, jalankan dengan `powershell -ExecutionPolicy Bypass -File .\scripts\<nama>.ps1 ...`.
 
+Status pengujian skrip: `deploy-testnet.ps1` dan `smoke-testnet.ps1` sudah diuji di **Windows PowerShell 5.1** memakai shim `stellar` palsu (offline, output tiruan termasuk kasus output kosong dan exit code non-nol), **belum** dengan jaringan nyata. Versi CLI yang dipakai 27.0.0; peringatan `A new release of Stellar CLI is available` di stderr boleh diabaikan.
+
 ## 1. Siapkan tiga identity + friendbot
 
 Satu untuk deploy, dua untuk smoke test (klien dan agen harus berbeda karena self-deal ditolak).
