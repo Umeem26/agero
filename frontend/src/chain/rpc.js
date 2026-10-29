@@ -81,6 +81,10 @@ export async function fetchAgents() {
   return raws.filter(Boolean).map(normalizeAgent);
 }
 
+export async function fetchJobCount() {
+  return BigInt(await viewAgero('job_count'));
+}
+
 // Ledger close time in seconds (bigint): the clock the contract compares deadlines against.
 // getLatestLedger() also decodes the full ledger metadata (8-12 s in SDK 17); every getTransaction
 // response carries latestLedgerCloseTime, so look up a hash that never exists instead (~0.5 s).
