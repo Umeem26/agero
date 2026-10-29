@@ -1,6 +1,7 @@
 // Job rules mirrored from contracts/agero-contract/src/lib.rs (see docs/contract-v2.md).
 // This is the only place in the frontend that knows the numeric JobStatus codes.
 import { stroopsToXlm, xlmToStroops } from './units';
+import { bytesToHex } from './hash';
 
 export const JobStatus = Object.freeze({ PENDING: 0, DELIVERED: 1, COMPLETED: 2, REFUNDED: 3 });
 const STATUS_LABELS = Object.freeze(['Pending', 'Delivered', 'Completed', 'Refunded']);
@@ -53,6 +54,7 @@ export function normalizeJob(id, raw) {
     createdAt: BigInt(raw.created_at),
     deadline: BigInt(raw.deadline),
     deliveredAt: raw.delivered_at == null ? null : BigInt(raw.delivered_at),
+    resultHash: raw.result_hash == null ? null : bytesToHex(Uint8Array.from(raw.result_hash)),
     rated: Boolean(raw.rated),
   };
 }
@@ -79,6 +81,31 @@ export function clientActions(job, wallet, nowSecs) {
     complete: isClient && job.status === JobStatus.DELIVERED,
     refund: isClient && job.status === JobStatus.PENDING && nowSecs > job.deadline,
     rate: isClient && job.status === JobStatus.COMPLETED && !job.rated,
+  };
+}
+
+// Which agent-side actions the contract would accept right now. `nowSecs` is ledger time (bigint).
+//   deliver: job's agent, while Pending (also after the deadline, until the client refunds)
+//   release: anyone, while Delivered and nowSecs >= delivered_at + 72 h (release_job has no auth)
+//   refund:  job's agent, while Pending or Delivered, at any time (voluntary cancel)
+export function agentActions(job, wallet, nowSecs) {
+  const isAgent = Boolean(wallet) && job.agent === wallet;
+  const end = reviewEndsAt(job);
+  return {
+    deliver: isAgent && job.status === JobStatus.PENDING,
+    release: Boolean(wallet) && job.status === JobStatus.DELIVERED && end != null && nowSecs >= end,
+    refund: isAgent && (job.status === JobStatus.PENDING || job.status === JobStatus.DELIVERED),
+  };
+}
+
+// Agent-side totals from a job scan (stroops, bigint). Completed covers complete_job and release_job.
+export function agentEarnings(jobs) {
+  const sum = (status) => jobs.filter((j) => j.status === status).reduce((s, j) => s + j.amount, 0n);
+  return {
+    paid: sum(JobStatus.COMPLETED),
+    awaitingRelease: sum(JobStatus.DELIVERED),
+    pending: sum(JobStatus.PENDING),
+    refunded: sum(JobStatus.REFUNDED),
   };
 }
 

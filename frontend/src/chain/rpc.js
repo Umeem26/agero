@@ -2,12 +2,13 @@ import { rpc, Account, Contract, TransactionBuilder, BASE_FEE, nativeToScVal, sc
 import { CONFIG, CONFIG_ERROR } from './config';
 import { ChainError, describeSimulationError } from './errors';
 import { normalizeAgent, normalizeJob } from './jobs';
+import { hexToBytes } from './hash';
 import { signWithFreighter } from './wallet';
 
 // Read-only simulations need a source account but no signature (same placeholder the SDK contract client uses)
 const READ_SOURCE = 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF';
 const READ_CONCURRENCY = 8;
-// "My jobs" scans the newest N job IDs; older jobs are not shown
+// "My jobs" and the agent dashboard scan the newest N job IDs; older jobs are not shown
 export const MAX_JOB_SCAN = 200;
 const WRITE_TIMEOUT_SECS = 300; // time the user has to sign in Freighter before the tx expires
 const POLL_ATTEMPTS = 30; // ~30 s at 1 s per attempt
@@ -30,6 +31,9 @@ export const arg = {
   i128: (v) => nativeToScVal(BigInt(v), { type: 'i128' }),
   u64: (v) => nativeToScVal(BigInt(v), { type: 'u64' }),
   u32: (v) => nativeToScVal(Number(v), { type: 'u32' }),
+  string: (v) => nativeToScVal(String(v), { type: 'string' }),
+  // BytesN<32> from a 64-char hex string (validated by hexToBytes)
+  bytes32: (hex) => nativeToScVal(hexToBytes(hex), { type: 'bytes' }),
 };
 
 // Run fn over items with at most `limit` requests in flight; keeps input order
@@ -46,7 +50,7 @@ async function mapLimit(items, limit, fn) {
   return out;
 }
 
-async function simulate(operation, source) {
+async function simulate(method, operation, source) {
   const { server } = chain();
   const tx = new TransactionBuilder(source, { fee: BASE_FEE, networkPassphrase: CONFIG.networkPassphrase })
     .addOperation(operation)
@@ -54,7 +58,7 @@ async function simulate(operation, source) {
     .build();
   const sim = await server.simulateTransaction(tx);
   if (rpc.Api.isSimulationError(sim)) {
-    const d = describeSimulationError(sim.error, { contractId: CONFIG.contractId, tokenId: CONFIG.xlmSac });
+    const d = describeSimulationError(sim.error, { contractId: CONFIG.contractId, tokenId: CONFIG.xlmSac, method });
     throw new ChainError(d.message, { kind: d.kind, code: d.code });
   }
   if (rpc.Api.isSimulationRestore(sim)) {
@@ -64,7 +68,7 @@ async function simulate(operation, source) {
 }
 
 async function view(contract, method, ...args) {
-  const { sim } = await simulate(contract.call(method, ...args), new Account(READ_SOURCE, '0'));
+  const { sim } = await simulate(method, contract.call(method, ...args), new Account(READ_SOURCE, '0'));
   if (!sim.result) throw new ChainError(`No result from ${method}.`, { kind: 'rpc' });
   return scValToNative(sim.result.retval);
 }
@@ -81,6 +85,12 @@ export async function fetchAgents() {
   return raws.filter(Boolean).map(normalizeAgent);
 }
 
+// get_agent for one address -> normalized agent, or null when none is registered
+export async function fetchAgent(owner) {
+  const raw = await viewAgero('get_agent', arg.address(owner));
+  return raw ? normalizeAgent(raw) : null;
+}
+
 export async function fetchJobCount() {
   return BigInt(await viewAgero('job_count'));
 }
@@ -94,7 +104,8 @@ export async function fetchLedgerTime() {
   return BigInt(String(res.latestLedgerCloseTime));
 }
 
-export async function fetchClientJobs(client) {
+// Scan the newest MAX_JOB_SCAN jobs (newest first) and keep those matching `keep`
+async function scanJobs(keep) {
   const [count, ledgerTime] = await Promise.all([viewAgero('job_count'), fetchLedgerTime()]);
   const total = BigInt(count);
   const ids = [];
@@ -102,9 +113,14 @@ export async function fetchClientJobs(client) {
   const raws = await mapLimit(ids, READ_CONCURRENCY, (id) => viewAgero('get_job', arg.u64(id)));
   const jobs = raws
     .map((raw, i) => (raw ? normalizeJob(ids[i], raw) : null))
-    .filter((job) => job && job.client === client);
+    .filter((job) => job && keep(job));
   return { jobs, total, scanned: ids.length, ledgerTime };
 }
+
+export const fetchClientJobs = (client) => scanJobs((job) => job.client === client);
+
+// Jobs whose agent_owner is `owner` (the "incoming jobs" of the agent dashboard)
+export const fetchAgentJobs = (owner) => scanJobs((job) => job.agent === owner);
 
 export async function fetchXlmBalance(address) {
   return BigInt(await view(chain().xlm, 'balance', arg.address(address)));
@@ -125,7 +141,7 @@ async function invoke(method, args, { source, onStep = () => {} }) {
   const { server, agero } = chain();
   onStep('simulate');
   const account = await server.getAccount(source);
-  const { tx, sim } = await simulate(agero.call(method, ...args), account);
+  const { tx, sim } = await simulate(method, agero.call(method, ...args), account);
   const prepared = rpc.assembleTransaction(tx, sim).build();
 
   onStep('sign');
@@ -162,8 +178,28 @@ export async function createJob({ client, agentOwner, amount, durationSecs }, op
 export const completeJob = ({ client, jobId }, opts = {}) =>
   invoke('complete_job', [arg.u64(jobId)], { ...opts, source: client });
 
-export const refundJob = ({ client, jobId }, opts = {}) =>
-  invoke('refund_job', [arg.u64(jobId), arg.address(client)], { ...opts, source: client });
+// caller = the job's client (Pending, after the deadline) or its agent (Pending/Delivered, any time)
+export const refundJob = ({ caller, jobId }, opts = {}) =>
+  invoke('refund_job', [arg.u64(jobId), arg.address(caller)], { ...opts, source: caller });
 
 export const rateAgent = ({ client, jobId, rating }, opts = {}) =>
   invoke('rate_agent', [arg.address(client), arg.u64(jobId), arg.u32(rating)], { ...opts, source: client });
+
+// ---- Agent side (phase 3b), same pipeline ----
+
+const agentProfileArgs = ({ owner, name, description, apiUrl, price }) =>
+  [arg.address(owner), arg.string(name), arg.string(description), arg.string(apiUrl), arg.i128(price)];
+
+export const registerAgent = (profile, opts = {}) =>
+  invoke('register_agent', agentProfileArgs(profile), { ...opts, source: profile.owner });
+
+export const updateAgent = (profile, opts = {}) =>
+  invoke('update_agent', agentProfileArgs(profile), { ...opts, source: profile.owner });
+
+// resultHash: 64-char hex SHA-256 of the result; only this commitment is stored, not the result
+export const deliverJob = ({ agent, jobId, resultHash }, opts = {}) =>
+  invoke('deliver_job', [arg.u64(jobId), arg.bytes32(resultHash)], { ...opts, source: agent });
+
+// release_job needs no auth; `caller` only pays the fee
+export const releaseJob = ({ caller, jobId }, opts = {}) =>
+  invoke('release_job', [arg.u64(jobId)], { ...opts, source: caller });

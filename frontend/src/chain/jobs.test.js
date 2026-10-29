@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   JobStatus, MAX_DURATION_SECS, MIN_DURATION_SECS, REVIEW_WINDOW_SECS,
-  clientActions, durationHoursToSecs, formatDuration, jobStatusLabel, normalizeJob, parseHireInput, parseJobStatus, reviewEndsAt,
+  agentActions, agentEarnings, clientActions, durationHoursToSecs, formatDuration, jobStatusLabel, normalizeJob, parseHireInput, parseJobStatus, reviewEndsAt,
 } from './jobs';
 
 const CLIENT = 'GBTBPEC5U2BEN3W5JQDHXI77EYD74ND76OIIJM4QVPUFIZEGF3DDDPA4';
@@ -29,6 +29,10 @@ describe('job status mapping', () => {
     const job = normalizeJob(1, RAW_JOB);
     expect(job).toMatchObject({ id: 1n, client: CLIENT, agent: AGENT, amount: 10000000n, status: JobStatus.COMPLETED, rated: true });
     expect(normalizeJob(2, { ...RAW_JOB, delivered_at: null }).deliveredAt).toBeNull();
+    expect(job.resultHash).toBe('0'.repeat(64));
+    expect(normalizeJob(2, { ...RAW_JOB, result_hash: Uint8Array.from({ length: 32 }, (_, i) => i) }).resultHash)
+      .toBe('000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f');
+    expect(normalizeJob(2, { ...RAW_JOB, result_hash: null }).resultHash).toBeNull();
     expect(() => normalizeJob(3, { ...RAW_JOB, status: 9 })).toThrow(RangeError);
   });
 });
@@ -91,6 +95,46 @@ describe('clientActions', () => {
   it('computes the end of the review window', () => {
     expect(reviewEndsAt(base)).toBeNull();
     expect(reviewEndsAt({ ...base, deliveredAt: 100n })).toBe(100n + 259200n);
+  });
+});
+
+describe('agentActions', () => {
+  const pending = normalizeJob(6, { ...RAW_JOB, status: 0, delivered_at: null, result_hash: null, rated: false });
+  const delivered = { ...pending, status: JobStatus.DELIVERED, deliveredAt: 1_000_000n };
+  const releaseAt = 1_000_000n + 259_200n;
+  const none = { deliver: false, release: false, refund: false };
+
+  it('lets the agent deliver while Pending, also after the deadline', () => {
+    expect(agentActions(pending, AGENT, 0n)).toEqual({ deliver: true, release: false, refund: true });
+    expect(agentActions(pending, AGENT, pending.deadline + 1_000_000n).deliver).toBe(true);
+  });
+
+  it('releases exactly at delivered_at + 72 h, not one second earlier', () => {
+    expect(agentActions(delivered, AGENT, releaseAt - 1n)).toEqual({ deliver: false, release: false, refund: true });
+    expect(agentActions(delivered, AGENT, releaseAt)).toEqual({ deliver: false, release: true, refund: true });
+    expect(agentActions(delivered, AGENT, releaseAt + 1n).release).toBe(true);
+  });
+
+  it('lets anyone with a wallet release, but only the agent deliver or refund', () => {
+    expect(agentActions(delivered, CLIENT, releaseAt)).toEqual({ deliver: false, release: true, refund: false });
+    expect(agentActions(pending, CLIENT, 0n)).toEqual(none);
+    expect(agentActions(delivered, null, releaseAt)).toEqual(none);
+  });
+
+  it('offers nothing on final states or a Delivered job without delivered_at', () => {
+    expect(agentActions({ ...delivered, status: JobStatus.COMPLETED }, AGENT, releaseAt)).toEqual(none);
+    expect(agentActions({ ...pending, status: JobStatus.REFUNDED }, AGENT, releaseAt)).toEqual(none);
+    expect(agentActions({ ...delivered, deliveredAt: null }, AGENT, releaseAt).release).toBe(false);
+  });
+
+  it('sums earnings by status from a job scan', () => {
+    const jobs = [
+      { ...pending, amount: 1n }, { ...delivered, amount: 20n },
+      { ...pending, status: JobStatus.COMPLETED, amount: 300n }, { ...pending, status: JobStatus.COMPLETED, amount: 4000n },
+      { ...pending, status: JobStatus.REFUNDED, amount: 50000n },
+    ];
+    expect(agentEarnings(jobs)).toEqual({ paid: 4300n, awaitingRelease: 20n, pending: 1n, refunded: 50000n });
+    expect(agentEarnings([])).toEqual({ paid: 0n, awaitingRelease: 0n, pending: 0n, refunded: 0n });
   });
 });
 

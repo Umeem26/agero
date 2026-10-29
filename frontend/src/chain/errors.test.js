@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONTRACT_ERRORS, ChainError, describeSimulationError, describeWalletError, friendlyError } from './errors';
+import { CONTRACT_ERRORS, METHOD_ERRORS, ChainError, describeSimulationError, describeWalletError, friendlyError } from './errors';
 
 const AGERO = 'CA5CMRJJHCJZIKVGFIOEV3BGVNTQVOI6KYV4S3GOROHUS7HLUUYLBDFB';
 const XLM = 'CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC';
@@ -56,6 +56,28 @@ describe('describeSimulationError', () => {
     expect(describeSimulationError('HostError: Error(Budget, ExceededLimit)', ids).kind).toBe('rpc');
     expect(describeSimulationError('weird failure\nmore', ids)).toEqual({ kind: 'unknown', code: null, message: 'Simulation failed: weird failure' });
     expect(describeSimulationError('', ids).message).toBe('Simulation failed.');
+  });
+
+  it('uses method-specific wording for the agent-side calls', () => {
+    const err = (code) => `HostError: Error(Contract, #${code})\n   0: [Diagnostic Event] contract:${AGERO}, topics:[error, Error(Contract, #${code})], data:""`;
+    const msg = (method, code) => describeSimulationError(err(code), { ...ids, method }).message;
+    expect(msg('register_agent', 3)).toMatch(/already has a registered agent/);
+    expect(msg('register_agent', 6)).toMatch(/greater than 0 XLM/);
+    expect(msg('update_agent', 1)).toMatch(/Register it first/);
+    expect(msg('deliver_job', 10)).toMatch(/no longer be delivered/);
+    expect(msg('release_job', 11)).toMatch(/72-hour review window/);
+    expect(msg('refund_job', 4)).toMatch(/client or its agent/);
+    expect(msg('refund_job', 11)).toMatch(/after the deadline/);
+    // codes without an override and unknown methods fall back to the generic table
+    expect(msg('deliver_job', 2)).toBe(CONTRACT_ERRORS[2]);
+    expect(msg('no_such_method', 10)).toBe(CONTRACT_ERRORS[10]);
+    for (const table of Object.values(METHOD_ERRORS)) {
+      for (const code of Object.keys(table)) expect(CONTRACT_ERRORS[code]).toBeDefined();
+    }
+  });
+
+  it('keeps the token origin when a method is given', () => {
+    expect(describeSimulationError(INSUFFICIENT_BALANCE, { ...ids, method: 'refund_job' }).kind).toBe('token');
   });
 
   it('does not attribute an unrelated contract error to Agero', () => {

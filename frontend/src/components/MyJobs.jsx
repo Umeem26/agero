@@ -181,7 +181,7 @@ export default function MyJobs({ wallet, agentsByOwner, runTx, onConnect, onChan
                       <button className="btn btn-green" onClick={() => act('Approve and pay (complete_job)', (opts) => completeJob({ client: wallet, jobId: job.id }, opts), `Job #${job.id} completed: ${stroopsToXlm(job.amount)} XLM released to the agent.`)}>Approve &amp; pay</button>
                     )}
                     {actions.refund && (
-                      <button className="btn btn-red" onClick={() => act('Refund escrow (refund_job)', (opts) => refundJob({ client: wallet, jobId: job.id }, opts), `Job #${job.id} refunded: ${stroopsToXlm(job.amount)} XLM returned to you.`)}>Refund</button>
+                      <button className="btn btn-red" onClick={() => act('Refund escrow (refund_job)', (opts) => refundJob({ caller: wallet, jobId: job.id }, opts), `Job #${job.id} refunded: ${stroopsToXlm(job.amount)} XLM returned to you.`)}>Refund</button>
                     )}
                     {actions.rate && <button className="btn btn-outline" onClick={() => setRatingJob(job)}>Rate</button>}
                   </div>

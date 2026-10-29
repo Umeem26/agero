@@ -18,6 +18,33 @@ export const CONTRACT_ERRORS = Object.freeze({
   14: 'Number overflow in the contract.',
 });
 
+// Clearer wording for codes whose meaning depends on the function that failed
+export const METHOD_ERRORS = Object.freeze({
+  register_agent: {
+    3: 'This wallet already has a registered agent (one agent per address). Reload the dashboard to edit it instead.',
+    6: 'Invalid price: it must be greater than 0 XLM.',
+  },
+  update_agent: {
+    1: 'No agent is registered for this wallet yet. Register it first.',
+    6: 'Invalid price: it must be greater than 0 XLM.',
+  },
+  deliver_job: {
+    10: 'This job can no longer be delivered: it is not Pending (already delivered, completed or refunded). Refresh the list.',
+  },
+  release_job: {
+    10: 'Only a Delivered job can be released. Refresh the list; it may already be paid or refunded.',
+    11: 'Too early: the 72-hour review window after delivery has not ended yet on the ledger clock.',
+  },
+  refund_job: {
+    4: "Not allowed: only this job's client or its agent can refund it.",
+    10: 'This job cannot be refunded in its current status (already completed or refunded, or delivered and you are the client). Refresh the list.',
+    11: 'Too early: the client can refund only after the deadline has passed.',
+  },
+  complete_job: {
+    10: 'Only a Delivered job can be approved. Refresh the job and try again.',
+  },
+});
+
 // Native XLM Stellar Asset Contract errors that a transfer can raise
 const TOKEN_ERRORS = Object.freeze({
   6: 'Your account does not exist on this network. Fund it with Friendbot first.',
@@ -39,7 +66,8 @@ const ERROR_EVENT = /contract:(C[A-Z2-7]{55}), topics:\[error, Error\(Contract, 
 
 // Parse a simulation error string (HostError + diagnostic event log, newest event first).
 // The oldest error event is where the failure started, which tells our contract apart from the XLM token.
-export function describeSimulationError(text, { contractId, tokenId } = {}) {
+// `method` (optional) picks a more specific message from METHOD_ERRORS.
+export function describeSimulationError(text, { contractId, tokenId, method } = {}) {
   const raw = String(text ?? '');
   const events = [...raw.matchAll(ERROR_EVENT)];
   let origin = events.length ? { contract: events[events.length - 1][1], code: Number(events[events.length - 1][2]) } : null;
@@ -52,7 +80,8 @@ export function describeSimulationError(text, { contractId, tokenId } = {}) {
     return { kind: 'token', code: origin.code, message: TOKEN_ERRORS[origin.code] || `XLM transfer failed (token error #${origin.code}).` };
   }
   if (origin && (!contractId || origin.contract === contractId)) {
-    return { kind: 'contract', code: origin.code, message: CONTRACT_ERRORS[origin.code] || `Contract error #${origin.code}.` };
+    const message = METHOD_ERRORS[method]?.[origin.code] || CONTRACT_ERRORS[origin.code] || `Contract error #${origin.code}.`;
+    return { kind: 'contract', code: origin.code, message };
   }
   if (/Error\(Auth,/.test(raw)) {
     return { kind: 'auth', code: null, message: 'Authorization failed: the connected wallet is not allowed to make this call.' };
