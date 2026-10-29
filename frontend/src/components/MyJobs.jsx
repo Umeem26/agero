@@ -1,32 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Clock, RefreshCw, Shield, Star, X } from 'lucide-react';
+import { Clock, FileCheck, RefreshCw, Shield, Star, X } from 'lucide-react';
 import { MAX_JOB_SCAN, completeJob, fetchClientJobs, rateAgent, refundJob } from '../chain/rpc';
 import { friendlyError } from '../chain/errors';
-import { JobStatus, clientActions, formatDuration, jobStatusLabel, reviewEndsAt } from '../chain/jobs';
+import { JobStatus, clientActions, formatDuration, reviewEndsAt } from '../chain/jobs';
+import { hashesMatch } from '../chain/hash';
 import { stroopsToXlm } from '../chain/units';
 import { CONFIG, explorerAccountUrl, explorerContractUrl } from '../chain/config';
 import { shortAddress } from '../agents';
 import { ErrorState, ExplorerLink } from './ui';
-
-const PROGRESS = {
-  [JobStatus.PENDING]: ['var(--blue)', 'transparent', 'transparent'],
-  [JobStatus.DELIVERED]: ['var(--blue)', 'var(--lavender)', 'transparent'],
-  [JobStatus.COMPLETED]: ['var(--blue)', 'var(--lavender)', 'var(--green)'],
-  [JobStatus.REFUNDED]: ['var(--rose)', 'var(--red)', 'transparent'],
-};
-
-const toDate = (secs) => new Date(Number(secs) * 1000).toLocaleString();
-
-// Ledger time now, estimated from the last ledger close time read plus local elapsed time
-function useLedgerNow(base) {
-  const [tick, setTick] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setTick(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  if (!base) return null;
-  return base.ledgerTime + BigInt(Math.max(0, Math.floor((tick - base.readAt) / 1000)));
-}
+import { HashMatch, HashSource, JobListSkeleton, JobProgress, StatusBadge } from './jobUi';
+import { toDate, useLedgerNow } from './ledgerTime';
 
 function TimeInfo({ job, now }) {
   if (now == null) return null;
@@ -70,9 +53,33 @@ function RatingModal({ job, agentName, onSubmit, onClose }) {
   );
 }
 
+// Client checks a file/text from the agent against the result_hash stored in the job. Local only.
+function VerifyModal({ job, agentName, onClose }) {
+  const [hash, setHash] = useState(null);
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Verify delivered file">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 className="modal-title" style={{ margin: 0 }}>Verify delivered file</h3>
+          <button className="icon-btn" aria-label="Close" onClick={onClose}><X size={18} /></button>
+        </div>
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '14px' }}>
+          Job #{String(job.id)} · {agentName}. Pick the file (or paste the text) the agent sent you. Its SHA-256 is computed in this browser and compared with the hash the agent recorded in the contract. Nothing is uploaded.
+        </p>
+        <div className="field-caption">Hash recorded by the agent</div>
+        <div className="mono-box" style={{ marginBottom: '16px' }}>{job.resultHash}</div>
+        <HashSource idPrefix={`verify-${job.id}`} onHash={setHash} />
+        {hash && <HashMatch ok={hashesMatch(hash, job.resultHash)} />}
+        <p className="form-hint" style={{ marginTop: '14px' }}>A match proves only that you received the content the agent committed to. It says nothing about its quality; Agero does not review the work.</p>
+      </div>
+    </div>
+  );
+}
+
 export default function MyJobs({ wallet, agentsByOwner, runTx, onConnect, onChanged, onOpenPlayground, onBrowse }) {
   const [state, setState] = useState({ status: 'idle', jobs: [], total: 0n, scanned: 0, error: '', base: null });
   const [ratingJob, setRatingJob] = useState(null);
+  const [verifyJob, setVerifyJob] = useState(null);
   const now = useLedgerNow(state.base);
 
   const load = useCallback(async () => {
@@ -138,11 +145,7 @@ export default function MyJobs({ wallet, agentsByOwner, runTx, onConnect, onChan
         <button className="btn btn-outline" onClick={load} disabled={state.status === 'loading'}><RefreshCw size={14} /> Refresh</button>
       </div>
 
-      {state.status === 'loading' && state.jobs.length === 0 && (
-        <div className="escrow-list" aria-busy="true">
-          {[0, 1].map((i) => <div key={i} className="card skeleton-card"><div className="skeleton" style={{ height: '16px', width: '40%' }} /><div className="skeleton" style={{ height: '12px', width: '70%' }} /></div>)}
-        </div>
-      )}
+      {state.status === 'loading' && state.jobs.length === 0 && <JobListSkeleton />}
       {state.status === 'error' && <ErrorState message={state.error} onRetry={load} />}
       {state.status === 'ready' && state.jobs.length === 0 && (
         <div className="card empty-state">
@@ -156,17 +159,14 @@ export default function MyJobs({ wallet, agentsByOwner, runTx, onConnect, onChan
         <div className="escrow-list">
           {state.jobs.map((job) => {
             const actions = clientActions(job, wallet, now ?? 0n);
-            const label = jobStatusLabel(job.status);
             return (
               <div key={String(job.id)} className="card escrow-card">
-                <div className="escrow-progress">
-                  {PROGRESS[job.status].map((c, i) => <div key={i} className="escrow-progress-seg" style={{ background: c }} />)}
-                </div>
+                <JobProgress status={job.status} />
                 <div className="escrow-body">
                   <div style={{ minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
                       <span className="escrow-title">Job #{String(job.id)}</span>
-                      <span className={`badge badge-${label.toLowerCase()}`}><span className="badge-dot" />{label}</span>
+                      <StatusBadge status={job.status} />
                     </div>
                     <div className="escrow-meta">
                       <span>Agent: <ExplorerLink href={explorerAccountUrl(job.agent)}>{agentName(job.agent)}</ExplorerLink></span>
@@ -174,6 +174,9 @@ export default function MyJobs({ wallet, agentsByOwner, runTx, onConnect, onChan
                       <span>Created {toDate(job.createdAt)}</span>
                     </div>
                     <div className="escrow-time"><TimeInfo job={job} now={now} /></div>
+                    {job.resultHash && (
+                      <div className="escrow-hash">Result hash (SHA-256): <code>{job.resultHash}</code></div>
+                    )}
                   </div>
                   <div className="escrow-actions">
                     {(job.status === JobStatus.PENDING || job.status === JobStatus.DELIVERED) && <button className="btn btn-playground" title="Simulated: no agent is called and no payment is checked" onClick={() => onOpenPlayground({ id: job.id, agentName: agentName(job.agent) })}>Test API (sim)</button>}
@@ -184,6 +187,7 @@ export default function MyJobs({ wallet, agentsByOwner, runTx, onConnect, onChan
                       <button className="btn btn-red" onClick={() => act('Refund escrow (refund_job)', (opts) => refundJob({ caller: wallet, jobId: job.id }, opts), `Job #${job.id} refunded: ${stroopsToXlm(job.amount)} XLM returned to you.`)}>Refund</button>
                     )}
                     {actions.rate && <button className="btn btn-outline" onClick={() => setRatingJob(job)}>Rate</button>}
+                    {job.resultHash && <button className="btn btn-outline" onClick={() => setVerifyJob(job)}><FileCheck size={14} /> Verify delivered file</button>}
                   </div>
                 </div>
               </div>
@@ -192,6 +196,7 @@ export default function MyJobs({ wallet, agentsByOwner, runTx, onConnect, onChan
         </div>
       )}
 
+      {verifyJob && <VerifyModal job={verifyJob} agentName={agentName(verifyJob.agent)} onClose={() => setVerifyJob(null)} />}
       {ratingJob && <RatingModal job={ratingJob} agentName={agentName(ratingJob.agent)} onSubmit={handleRate} onClose={() => setRatingJob(null)} />}
     </>
   );

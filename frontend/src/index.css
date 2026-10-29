@@ -1573,3 +1573,21 @@ select.form-input option {
 .cli-box { font-family: monospace; font-size: 11.5px; color: var(--text-secondary); background: rgba(0, 0, 0, 0.25); border: 1px solid var(--border); padding: 12px; border-radius: 8px; overflow-x: auto; white-space: pre; margin: 0; }
 .card-heading { font-size: 16px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
 .detail-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-top: 20px; border-top: 1px solid var(--border); }
+
+/* ── Phase 3b: agent dashboard, result hashes ── */
+.notice-card { display: flex; gap: 10px; padding: 14px 18px; margin-bottom: 20px; font-size: 13px; line-height: 1.6; color: var(--text-secondary); border-left: 3px solid var(--amber); }
+.notice-inline { border-radius: 8px; background: rgba(252, 211, 77, 0.06); margin-bottom: 16px; padding: 10px 12px; font-size: 12.5px; }
+.mode-tabs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.mode-tab { background: none; border: 1px solid var(--border); color: var(--text-dim); border-radius: 100px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+.mode-tab.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; }
+.form-input.mono { font-family: monospace; font-size: 12px; }
+.check-row { display: flex; gap: 10px; align-items: flex-start; font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px; cursor: pointer; }
+.check-row input { margin-top: 3px; flex-shrink: 0; }
+.hash-verdict { display: flex; gap: 8px; align-items: center; font-size: 13px; font-weight: 600; border-radius: 8px; padding: 10px 12px; }
+.hash-verdict.ok { color: var(--green); background: var(--green-soft); }
+.hash-verdict.bad { color: var(--red); background: var(--red-soft); }
+.escrow-hash { font-size: 11.5px; color: var(--text-dim); margin-top: 6px; word-break: break-all; }
+.escrow-hash code { font-family: monospace; color: var(--text-secondary); }
+.stat-unit { font-size: 12px; font-weight: 500; color: var(--text-dim); }
+.link-btn { background: none; border: none; padding: 0; color: var(--accent); cursor: pointer; font: inherit; text-decoration: underline; }

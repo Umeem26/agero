@@ -11,6 +11,7 @@ import { AgeroLogo, Robot3D } from './components/Robot3D';
 import { Stars, SampleBadge, ExplorerLink, ErrorState, SkeletonCards } from './components/ui';
 import HireModal from './components/HireModal';
 import MyJobs from './components/MyJobs';
+import AgentDashboard from './components/AgentDashboard';
 import Playground from './components/Playground';
 import TxProgress from './components/TxProgress';
 
@@ -18,6 +19,7 @@ const PAGES = [
   { id: 'home', label: 'Home' },
   { id: 'marketplace', label: 'Marketplace' },
   { id: 'jobs', label: 'My Jobs' },
+  { id: 'agent', label: 'Agent Dashboard' },
   { id: 'developer', label: 'Developer' },
 ];
 const REVIEW_HOURS = REVIEW_WINDOW_SECS / HOUR_SECS;
@@ -126,7 +128,7 @@ export default function App() {
   const handleDisconnect = () => { setWallet(null); setWalletOpen(false); notify('Wallet disconnected'); };
 
   // Runs a contract write and drives the progress drawer. Resolves to the result, or null on failure.
-  const runTx = async (title, call, { successText } = {}) => {
+  const runTx = async (title, call, { successText, onError } = {}) => {
     setTx({ title, step: 'simulate', hash: null, error: '', done: false, successText: '', action: null });
     try {
       const res = await call({ onStep: (step, hash) => setTx((t) => ({ ...t, step, hash: hash ?? t.hash })) });
@@ -134,6 +136,7 @@ export default function App() {
       return res;
     } catch (e) {
       setTx((t) => ({ ...t, error: friendlyError(e), hash: e?.hash ?? t.hash }));
+      onError?.(e);
       return null;
     }
   };
@@ -169,8 +172,8 @@ export default function App() {
             <div className="container sim-banner-inner">
               <AlertCircle size={15} style={{ flexShrink: 0 }} />
               <span>
-                Testnet prototype. <strong>Real on Stellar Testnet</strong> (signed in Freighter): agent registry, XLM escrow (create, approve, refund) and star ratings.{' '}
-                <strong>Simulated:</strong> agents doing the work and the x402 payment playground.
+                Testnet prototype. <strong>Real on Stellar Testnet</strong> (signed in Freighter): agent registry and profiles, XLM escrow (create, deliver, approve, release, refund) and star ratings.{' '}
+                <strong>Outside Agero:</strong> the agents' work; only a hash of each result is recorded. <strong>Simulated:</strong> the x402 payment playground.
               </span>
               <button className="sim-banner-close" aria-label="Dismiss notice" onClick={() => setShowBanner(false)}><X size={14} /></button>
             </div>
@@ -278,6 +281,12 @@ export default function App() {
                       <span style={{ fontSize: '13px', color: 'var(--text-dim)', wordBreak: 'break-all' }}>Owner: <ExplorerLink href={explorerAccountUrl(detailAgent.owner)}>{detailAgent.owner}</ExplorerLink></span>
                       <button className="btn btn-primary" onClick={() => setShowHire(true)} disabled={wallet === detailAgent.owner} title={wallet === detailAgent.owner ? 'You cannot hire your own agent' : undefined}>Hire Agent</button>
                     </div>
+                    {wallet === detailAgent.owner && (
+                      <p className="form-hint" style={{ marginTop: '12px' }}>
+                        This is your agent, so hiring is disabled: the contract rejects a job where client and agent are the same address.{' '}
+                        <button type="button" className="link-btn" onClick={() => go('agent')}>Open the Agent dashboard</button> to manage it.
+                      </p>
+                    )}
                   </div>
 
                   <div className="card reviews-section">
@@ -304,7 +313,7 @@ export default function App() {
                       </h1>
                       <p className="hero-desc">
                         Browse AI agents registered in a Soroban contract on Stellar Testnet. Lock Testnet XLM in escrow with a deadline you choose,
-                        approve the payment after delivery, or refund it if nothing is delivered in time. Agent execution is still simulated in this prototype.
+                        approve the payment after delivery, or refund it if nothing is delivered in time. Agero does not run the agents: their owners do the work outside the app and record only a hash of each result.
                       </p>
                       <div className="hero-actions">
                         <button className="btn btn-primary btn-lg" onClick={() => go('marketplace')}>Explore Marketplace</button>
@@ -346,13 +355,13 @@ export default function App() {
 
                   <div className="workflow-section">
                     <h2 className="showcase-title">How Agero Works</h2>
-                    <p className="showcase-desc">Steps 1, 2 and 4 run against the contract on Testnet. Step 3 is done by the agent; in this prototype no AI work is performed.</p>
+                    <p className="showcase-desc">Steps 1, 2 and 4 and the delivery record in step 3 are contract calls on Testnet. The work itself happens outside Agero; the sample agents perform no work at all.</p>
                     <div className="workflow-timeline">
                       <div className="timeline-progress-line" />
                       {[
                         ['Connect Freighter', 'Connect a Freighter wallet set to Stellar Testnet.'],
                         ['Lock Escrow', 'create_job moves your XLM into the contract with a deadline between 1 hour and 30 days.'],
-                        ['Agent Delivers', 'The agent submits a result hash with deliver_job (from the stellar CLI for now; the work itself is simulated).'],
+                        ['Agent Delivers', 'The agent owner does the work outside Agero, sends the result to the client, and records its SHA-256 hash with deliver_job from the Agent dashboard.'],
                         ['Approve or Refund', `complete_job pays the agent. With no delivery by the deadline you can refund. ${REVIEW_HOURS} h after delivery anyone can release the payment.`],
                       ].map(([title, desc], i) => (
                         <div key={title} className="timeline-node">
@@ -423,27 +432,34 @@ export default function App() {
                 </div>
               )}
 
+              {/* ═══ AGENT DASHBOARD ═══ */}
+              {activePage === 'agent' && (
+                <div className="page-view">
+                  <div className="section-header">
+                    <h1 className="section-title">Agent Dashboard</h1>
+                    <p className="section-desc">For agent owners: register or edit your agent, see jobs hired from it, record deliveries, release payments after the review window, or refund a client. Every action is a contract call on Stellar Testnet signed in Freighter.</p>
+                  </div>
+                  <AgentDashboard wallet={wallet} runTx={runTx} onConnect={handleConnect} onChanged={loadRegistry} onBrowse={() => go('marketplace')} />
+                </div>
+              )}
+
               {/* ═══ DEVELOPER ═══ */}
               {activePage === 'developer' && (
                 <div className="page-view">
                   <div className="section-header">
                     <h1 className="section-title">Developer Portal</h1>
-                    <p className="section-desc">Registering an agent and delivering results from this UI are not available yet (planned for phase 3b). Agents do both with the stellar CLI today.</p>
+                    <p className="section-desc">Register your agent, deliver results and release payments from the Agent dashboard (signed in Freighter). The stellar CLI commands on the right do the same and remain available as an alternative.</p>
                   </div>
 
                   <div className="dev-layout">
                     <div className="card dev-form-card">
                       <h3 className="card-heading"><Zap size={18} style={{ color: 'var(--accent)' }} /> Your agent</h3>
                       {!wallet ? (
-                        <div className="empty-state">
-                          <div className="empty-icon"><Shield size={24} /></div>
-                          <p style={{ color: 'var(--text-dim)', marginBottom: '16px' }}>Connect Freighter to look up the agent registered for your address.</p>
-                          <button className="btn btn-primary" onClick={handleConnect}>Connect Freighter</button>
-                        </div>
+                        <p style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '16px' }}>Connect Freighter in the Agent dashboard to register an agent or look up the one for your address.</p>
                       ) : registry.status === 'error' ? (
                         <ErrorState message={registry.error} onRetry={loadRegistry} />
                       ) : registry.status === 'loading' ? (
-                        <div className="skeleton" style={{ height: '60px' }} />
+                        <div className="skeleton" style={{ height: '60px', marginBottom: '16px' }} />
                       ) : ownAgent ? (
                         <div className="drawer-info">
                           <div className="drawer-row"><span className="drawer-row-label">Name</span><span className="drawer-row-val">{ownAgent.name}</span></div>
@@ -452,18 +468,20 @@ export default function App() {
                           <div className="drawer-row"><span className="drawer-row-label">Rating</span><span className="drawer-row-val">{ownAgent.ratingCount > 0 ? `${ownAgent.averageRating.toFixed(1)} (${ownAgent.ratingCount})` : 'none yet'}</span></div>
                         </div>
                       ) : (
-                        <p style={{ fontSize: '13px', color: 'var(--text-dim)' }}>No agent is registered for {shortAddress(wallet)} on this contract.</p>
+                        <p style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '16px' }}>No agent is registered for {shortAddress(wallet)} on this contract.</p>
                       )}
+                      <button className="btn btn-primary" onClick={() => go('agent')}><Shield size={14} /> Open Agent dashboard</button>
+                      <p className="form-hint" style={{ marginTop: '14px' }}>Agero does not host or run agents. The dashboard records your profile and, per job, a SHA-256 hash of the result you send to the client yourself.</p>
                     </div>
 
                     <div className="card" style={{ padding: '24px' }}>
-                      <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '14px' }}>Register and deliver with the stellar CLI</h4>
+                      <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '14px' }}>Alternative: the stellar CLI</h4>
                       <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginBottom: '8px' }}>Price is in stroops (1 XLM = 10,000,000). One agent per address.</p>
                       <pre className="cli-box">{`stellar contract invoke --id ${CONFIG.contractId} \\
   --source-account <identity> --network testnet -- \\
   register_agent --owner <G...> --name "<name>" \\
   --description "<description>" --api_url "<url>" --price <stroops>`}</pre>
-                      <p style={{ fontSize: '12px', color: 'var(--text-dim)', margin: '14px 0 8px' }}>Deliver a job (result_hash = 64 hex characters, e.g. SHA-256 of the output):</p>
+                      <p style={{ fontSize: '12px', color: 'var(--text-dim)', margin: '14px 0 8px' }}>Deliver a job (result_hash = 64 hex characters, e.g. from <code>sha256sum result.zip</code>; the dashboard computes the same hash):</p>
                       <pre className="cli-box">{`stellar contract invoke --id ${CONFIG.contractId} \\
   --source-account <identity> --network testnet -- \\
   deliver_job --job_id <id> --result_hash <hex64>`}</pre>
