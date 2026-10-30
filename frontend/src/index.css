@@ -905,6 +905,9 @@ select.form-input option {
 
 .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
 
+/* Dialog panels take focus only as a fallback (no control inside yet); no ring on the panel itself */
+.modal:focus, .drawer:focus { outline: none; }
+
 /* ── Drawer ── */
 .drawer-bg {
   position: fixed; inset: 0;

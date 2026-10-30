@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
 import { createJob, fetchXlmBalance } from '../chain/rpc';
 import { friendlyError } from '../chain/errors';
 import { MAX_DURATION_HOURS, MIN_DURATION_HOURS, REVIEW_WINDOW_SECS, HOUR_SECS, parseHireInput } from '../chain/jobs';
 import { stroopsToXlm } from '../chain/units';
+import Modal from './Modal';
 
 const DEFAULT_HOURS = '24';
 
@@ -50,12 +50,7 @@ export default function HireModal({ agent, wallet, onConnect, onClose, runTx, on
   };
 
   return (
-    <div className="overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={`Hire ${agent.name}`}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 className="modal-title" style={{ margin: 0 }}>Hire {agent.name}</h3>
-          <button className="icon-btn" aria-label="Close" onClick={onClose}><X size={18} /></button>
-        </div>
+    <Modal title={`Hire ${agent.name}`} onClose={onClose}>
 
         {!wallet ? (
           <>
@@ -69,7 +64,7 @@ export default function HireModal({ agent, wallet, onConnect, onClose, runTx, on
             </p>
             <div className="form-group">
               <label className="form-label" htmlFor="hire-amount">Escrow amount (XLM)</label>
-              <input id="hire-amount" className="form-input" inputMode="decimal" value={amountXlm} onChange={(e) => setAmountXlm(e.target.value)} required />
+              <input id="hire-amount" data-autofocus className="form-input" inputMode="decimal" value={amountXlm} onChange={(e) => setAmountXlm(e.target.value)} required />
               <div className="form-hint">
                 {balance.state === 'loading' && 'Reading your balance…'}
                 {balance.state === 'ready' && `Your balance: ${stroopsToXlm(balance.value)} XLM`}
@@ -105,7 +100,6 @@ export default function HireModal({ agent, wallet, onConnect, onClose, runTx, on
             </div>
           </>
         )}
-      </div>
-    </div>
+    </Modal>
   );
 }

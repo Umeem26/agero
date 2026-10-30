@@ -1,6 +1,8 @@
+import { useId, useRef } from 'react';
 import { CheckCircle, AlertCircle, X } from 'lucide-react';
 import { explorerTxUrl } from '../chain/config';
 import { ExplorerLink } from './ui';
+import { useDialog } from './Modal';
 
 const STEPS = [
   { id: 'simulate', label: 'Simulating the call on Testnet' },
@@ -13,14 +15,18 @@ const STEPS = [
 export default function TxProgress({ tx, onClose }) {
   const busy = !tx.done && !tx.error;
   const current = STEPS.findIndex((s) => s.id === tx.step);
+  const panelRef = useRef(null);
+  const titleId = useId();
+  // Cannot be closed (Escape, overlay, button) while the transaction is in flight
+  useDialog(panelRef, { onClose, canClose: !busy });
 
   return (
     <div className="drawer-bg" onClick={() => { if (!busy) onClose(); }}>
-      <div className="drawer" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={tx.title}>
+      <div ref={panelRef} className="drawer" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-busy={busy} tabIndex={-1}>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-            <span className="drawer-title">{tx.title}</span>
-            {!busy && <button className="icon-btn" aria-label="Close" onClick={onClose}><X size={18} /></button>}
+            <h2 id={titleId} className="drawer-title">{tx.title}</h2>
+            {!busy && <button type="button" className="icon-btn" aria-label="Close" onClick={onClose}><X size={18} /></button>}
           </div>
 
           {busy && (

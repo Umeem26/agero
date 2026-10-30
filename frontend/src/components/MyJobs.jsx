@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Clock, FileCheck, RefreshCw, Shield, Star, X } from 'lucide-react';
+import { Clock, FileCheck, RefreshCw, Shield, Star } from 'lucide-react';
 import { MAX_JOB_SCAN, completeJob, fetchClientJobs, rateAgent, refundJob } from '../chain/rpc';
 import { friendlyError } from '../chain/errors';
 import { JobStatus, clientActions, formatDuration, reviewEndsAt } from '../chain/jobs';
@@ -10,6 +10,7 @@ import { shortAddress } from '../agents';
 import { ErrorState, ExplorerLink } from './ui';
 import { HashMatch, HashSource, JobListSkeleton, JobProgress, StatusBadge } from './jobUi';
 import { toDate, useLedgerNow } from './ledgerTime';
+import Modal from './Modal';
 
 function TimeInfo({ job, now }) {
   if (now == null) return null;
@@ -31,25 +32,19 @@ function TimeInfo({ job, now }) {
 function RatingModal({ job, agentName, onSubmit, onClose }) {
   const [stars, setStars] = useState(5);
   return (
-    <div className="overlay" onClick={onClose}>
-      <div className="modal rating-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Rate agent">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 className="modal-title" style={{ margin: 0 }}>Rate {agentName}</h3>
-          <button className="icon-btn" aria-label="Close" onClick={onClose}><X size={18} /></button>
-        </div>
+    <Modal title={`Rate ${agentName}`} onClose={onClose} className="rating-modal">
         <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
           Job #{String(job.id)}. The contract stores one 1–5 star rating per completed job; there are no text reviews.
         </p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '20px' }}>
+        <div role="group" aria-label={`Rating: ${stars} of 5 stars`} style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '20px' }}>
           {[1, 2, 3, 4, 5].map((n) => (
-            <button type="button" key={n} className="icon-btn" aria-label={`${n} star${n > 1 ? 's' : ''}`} onClick={() => setStars(n)}>
+            <button type="button" key={n} className="icon-btn" aria-label={`${n} star${n > 1 ? 's' : ''}`} aria-pressed={n === stars} onClick={() => setStars(n)}>
               <Star size={28} style={{ fill: n <= stars ? '#fcd34d' : 'none', stroke: n <= stars ? '#fcd34d' : 'var(--text-dim)' }} />
             </button>
           ))}
         </div>
         <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => onSubmit(stars)}>Sign rating in Freighter</button>
-      </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -57,12 +52,7 @@ function RatingModal({ job, agentName, onSubmit, onClose }) {
 function VerifyModal({ job, agentName, onClose }) {
   const [hash, setHash] = useState(null);
   return (
-    <div className="overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Verify delivered file">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 className="modal-title" style={{ margin: 0 }}>Verify delivered file</h3>
-          <button className="icon-btn" aria-label="Close" onClick={onClose}><X size={18} /></button>
-        </div>
+    <Modal title="Verify delivered file" onClose={onClose}>
         <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '14px' }}>
           Job #{String(job.id)} · {agentName}. Pick the file (or paste the text) the agent sent you. Its SHA-256 is computed in this browser and compared with the hash the agent recorded in the contract. Nothing is uploaded.
         </p>
@@ -71,8 +61,7 @@ function VerifyModal({ job, agentName, onClose }) {
         <HashSource idPrefix={`verify-${job.id}`} onHash={setHash} />
         {hash && <HashMatch ok={hashesMatch(hash, job.resultHash)} />}
         <p className="form-hint" style={{ marginTop: '14px' }}>A match proves only that you received the content the agent committed to. It says nothing about its quality; Agero does not review the work.</p>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

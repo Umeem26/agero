@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, Clock, Info, RefreshCw, Shield, X, Zap } from 'lucide-react';
+import { AlertCircle, Clock, Info, RefreshCw, Shield, Zap } from 'lucide-react';
 import { MAX_JOB_SCAN, deliverJob, fetchAgent, fetchAgentJobs, refundJob, releaseJob } from '../chain/rpc';
 import { friendlyError } from '../chain/errors';
 import { HOUR_SECS, JobStatus, REVIEW_WINDOW_SECS, agentActions, agentEarnings, formatDuration, reviewEndsAt } from '../chain/jobs';
@@ -11,6 +11,7 @@ import { ErrorState, ExplorerLink } from './ui';
 import { HashSource, JobListSkeleton, JobProgress, StatusBadge } from './jobUi';
 import { toDate, useLedgerNow } from './ledgerTime';
 import AgentProfileForm from './AgentProfileForm';
+import Modal from './Modal';
 
 const REVIEW_HOURS = REVIEW_WINDOW_SECS / HOUR_SECS;
 
@@ -42,20 +43,6 @@ function AgentTimeInfo({ job, now }) {
   }
   if (job.status === JobStatus.COMPLETED) return <span>Paid to your wallet.</span>;
   return <span>Refunded to the client.</span>;
-}
-
-function Modal({ title, onClose, children }) {
-  return (
-    <div className="overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={title}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 className="modal-title" style={{ margin: 0 }}>{title}</h3>
-          <button className="icon-btn" aria-label="Close" onClick={onClose}><X size={18} /></button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
 }
 
 // Pick file / text / hash -> SHA-256 shown -> owner confirms -> deliver_job
