@@ -5,14 +5,16 @@ export const SAMPLE_PREFIX = 'Sample agent - ';
 const SAMPLE_BY_NAME = new Map(SAMPLE_AGENTS.map((a) => [a.name, a]));
 
 // On-chain agent -> what the UI shows. Image and category exist only in this frontend
-// (the contract stores neither), and only for the seeded sample agents.
+// (the contract stores neither), and only for the seeded sample agents. Sample agents also show
+// the description from sample-agents.json: the on-chain text of the agents seeded on 2026-10-29
+// is older and stays as it is until each owner calls update_agent.
 export function presentAgent(agent) {
   const isSample = agent.description.startsWith(SAMPLE_PREFIX);
   const extra = isSample ? SAMPLE_BY_NAME.get(agent.name) : undefined;
   return {
     ...agent,
     isSample,
-    summary: isSample ? agent.description.slice(SAMPLE_PREFIX.length) : agent.description,
+    summary: isSample ? (extra?.description ?? agent.description.slice(SAMPLE_PREFIX.length)) : agent.description,
     category: extra?.category ?? 'Other',
     image: extra?.image ?? null,
     averageRating: agent.ratingCount > 0 ? Number(agent.ratingSum) / agent.ratingCount : 0,

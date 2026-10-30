@@ -193,7 +193,8 @@ export default function App() {
             <div className="container sim-banner-inner">
               <AlertCircle size={15} style={{ flexShrink: 0 }} />
               <span>
-                Testnet prototype. <strong>Real on Stellar Testnet</strong> (signed in Freighter): agent registry and profiles, XLM escrow (create, deliver, approve, release, refund) and star ratings.{' '}
+                Testnet prototype. <strong>Read from Stellar Testnet:</strong> agent registry, ratings and jobs.{' '}
+                <strong>Implemented, manual Freighter test pending:</strong> signed writes for agent profiles, XLM escrow (create, deliver, approve, release, refund) and star ratings.{' '}
                 <strong>Outside Agero:</strong> the agents' work; only a hash of each result is recorded. <strong>Simulated:</strong> the x402 payment playground.
               </span>
               <button className="sim-banner-close" aria-label="Dismiss notice" onClick={() => setShowBanner(false)}><X size={14} /></button>
@@ -276,7 +277,7 @@ export default function App() {
                     <h1 className="detail-name">{detailAgent.name}</h1>
                     <p className="detail-desc">{detailAgent.summary}</p>
                     {detailAgent.isSample && (
-                      <p className="sample-note">Sample agent registered by the project's seed script. Its endpoint is a placeholder with no live service, the image is a static sample, and no AI work is performed. Price, rating and job count are read from the contract.</p>
+                      <p className="sample-note">Sample agent registered by the project's seed script. Its endpoint is a placeholder with no live service, the image is a static sample, and no AI work is performed. The description is illustrative text kept in this frontend; the contract still stores the original seed text. Price, rating and job count are read from the contract.</p>
                     )}
 
                     <div className="detail-info-grid">

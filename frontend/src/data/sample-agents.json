@@ -2,17 +2,17 @@
   {
     "slug": "summarizer-bot",
     "name": "Summarizer Bot",
-    "category": "Text AI",
+    "category": "Text",
     "price_xlm": "100",
-    "description": "AI agent to instantly summarize long documents, research articles, and PDFs. Supports files up to 100 pages with structured bullet-point output.",
+    "description": "Example: a document summarizer that returns bullet-point summaries of long texts.",
     "image": "/agent_summarizer.png"
   },
   {
     "slug": "image-generator-pro",
     "name": "Image Generator Pro",
-    "category": "Creative AI",
+    "category": "Creative",
     "price_xlm": "500",
-    "description": "AI image generator for creative media assets, graphic illustrations, and marketing layouts. Supports various artistic styles and resolutions up to 4K.",
+    "description": "Example: an image service for illustrations and marketing graphics in several styles.",
     "image": "/agent_imagegen.png"
   },
   {
@@ -20,7 +20,7 @@
     "name": "Translation Bot XL",
     "category": "Utility",
     "price_xlm": "50",
-    "description": "Ultra-fast machine translation engine optimized for Southeast Asian slang and colloquial dialects. Supports 10+ global languages.",
+    "description": "Example: a translation service that also handles informal Southeast Asian language.",
     "image": "/agent_translator.png"
   },
   {
@@ -28,31 +28,31 @@
     "name": "Code Auditor AI",
     "category": "Utility",
     "price_xlm": "800",
-    "description": "Automatically scan and audit Soroban Rust and Solidity smart contracts. Detects reentrancy, overflows, and prints professional PDF vulnerability reports.",
+    "description": "Example: a review of Soroban Rust and Solidity contracts, delivered as a written report.",
     "image": "/agent_auditor.png"
   },
   {
     "slug": "data-analyst-bot",
     "name": "Data Analyst Bot",
-    "category": "Text AI",
+    "category": "Text",
     "price_xlm": "300",
-    "description": "Analyze CSV, JSON, and Excel spreadsheets using natural language search. Generates instant statistical insights, custom graphs, and CSV summaries.",
+    "description": "Example: a service that summarizes CSV, JSON and spreadsheet data with charts.",
     "image": "/agent_data.png"
   },
   {
     "slug": "voice-cloner-ai",
     "name": "Voice Cloner AI",
-    "category": "Creative AI",
+    "category": "Creative",
     "price_xlm": "600",
-    "description": "High-quality voice cloning for audio dubbing, narration, and localized sound clips. Requires only a 30-second clean voice audio sample.",
+    "description": "Example: a voice-over service for dubbing and narration based on a short voice sample.",
     "image": "/agent_voice.png"
   },
   {
     "slug": "music-composer-ai",
     "name": "Music Composer AI",
-    "category": "Creative AI",
+    "category": "Creative",
     "price_xlm": "400",
-    "description": "Generate customized, royalty-free audio tracks and atmospheric background loops based on text descriptions, genre filters, and tempo parameters.",
+    "description": "Example: background music composed from a text brief, genre and tempo.",
     "image": "/agent_music.png"
   },
   {
@@ -60,31 +60,31 @@
     "name": "SEO Optimizer Bot",
     "category": "Utility",
     "price_xlm": "200",
-    "description": "Scan URLs to analyze search rankings, generate high-intent metadata tags, and optimize content structure to improve organic traffic.",
+    "description": "Example: a review of a web page with suggested metadata and structure changes.",
     "image": "/agent_seo.png"
   },
   {
     "slug": "chatbot-assistant",
     "name": "Chatbot Assistant",
-    "category": "Text AI",
+    "category": "Text",
     "price_xlm": "250",
-    "description": "Deploy smart conversational support agents pre-trained on your specific product manuals or business knowledge base.",
+    "description": "Example: a support chatbot set up from your product manuals or knowledge base.",
     "image": "/agent_chatbot.png"
   },
   {
     "slug": "sentiment-analyst",
     "name": "Sentiment Analyst",
-    "category": "Text AI",
+    "category": "Text",
     "price_xlm": "150",
-    "description": "Analyze social media streams, customer reviews, and survey feedback in real-time to track customer emotions and sentiment indexes.",
+    "description": "Example: sentiment scoring of reviews, survey answers and social media posts.",
     "image": "/agent_sentiment.png"
   },
   {
     "slug": "video-generator-ai",
     "name": "Video Generator AI",
-    "category": "Creative AI",
+    "category": "Creative",
     "price_xlm": "700",
-    "description": "Generate dynamic video clips from scripts with automated B-roll footage selection, AI narration, and perfectly aligned captions.",
+    "description": "Example: a short captioned video made from a script you provide.",
     "image": "/agent_video.png"
   }
 ]

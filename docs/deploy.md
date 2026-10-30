@@ -147,6 +147,8 @@ Yang dilakukan untuk setiap agen ke-NN (01..11):
 
 Idempoten: identity yang ada dipakai ulang, akun yang sudah ada tidak didanai ulang, agen yang sudah terdaftar dilewati (`already registered`). Harga agen yang sudah terdaftar tidak diubah; untuk itu perlu `update_agent`.
 
+Deskripsi sampel (Fase 4a): deskripsi dan kategori di `sample-agents.json` ditulis ulang tanpa klaim "AI", "instantly", "real-time", "Ultra-fast" atau "10+ languages", dan UI menampilkan deskripsi dari file itu untuk agen Sample. **Deskripsi on-chain ke-11 agen yang di-seed pada 2026-10-29 tidak berubah**: kontrak masih menyimpan teks lama, dan skrip ini melewati agen yang sudah terdaftar. Teks on-chain baru berubah bila pemilik tiap identity `agero-seed-NN` memanggil `update_agent` (transaksi Testnet, butuh izin eksplisit). Nama dan harga tetap sama dengan on-chain.
+
 Retry: setiap panggilan `stellar` dicoba hingga `-Retries` kali (default 4, jeda 3/6/12 detik) hanya untuk error sementara (`SendRequest`, `Connect`, timeout, koneksi putus, `429`, `5xx`). Error kontrak (`Error(Contract, #N)`) dan argumen salah tidak diulang; skrip mencetak output CLI lengkap lalu berhenti. Sebelum mengirim ulang `register_agent` atau friendbot, skrip memeriksa dulu apakah percobaan sebelumnya sudah masuk. Ada jeda 3 detik antar-agen (`-AgentDelaySeconds`). Untuk mencoba satu agen saja: `-Only 6 -Retries 1` (ringkasan di bawah tidak ditulis bila `-Only` dipakai).
 
 Biaya: setiap identity seed membayar fee `register_agent` dari saldo friendbot-nya sendiri. Akun Umem tidak dipakai.

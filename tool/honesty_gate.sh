@@ -24,6 +24,11 @@ BANNED_PHRASES=(
   "verified by the contract"
   "quality verified"
   "earnings verified"
+  # Phase 4a: write paths await the manual Freighter test; no speed or real-time claims for samples
+  "Real on Stellar Testnet"
+  "real-time"
+  "instantly"
+  "Ultra-fast"
 )
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
