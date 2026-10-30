@@ -173,7 +173,7 @@ export default function AgentDashboard({ wallet, runTx, onConnect, onChanged, on
       <OffAppNotice />
 
       <div className="card dev-form-card" style={{ marginBottom: '24px' }}>
-        <h3 className="card-heading"><Zap size={18} style={{ color: 'var(--accent)' }} /> {can.register ? 'Register your agent' : 'Your agent'}</h3>
+        <h3 className="card-heading"><Zap size={18} style={{ color: 'var(--color-brand-text)' }} /> {can.register ? 'Register your agent' : 'Your agent'}</h3>
         {can.register && (
           <>
             <p style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '18px' }}>No agent is registered for {shortAddress(wallet)} on contract <ExplorerLink href={explorerContractUrl()}>{shortAddress(CONFIG.contractId)}</ExplorerLink>. Registering lists it in the marketplace.</p>

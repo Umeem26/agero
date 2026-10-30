@@ -269,7 +269,7 @@ export default function App() {
                 <div className="detail-layout">
                   <div className="card detail-main">
                     <div className="detail-meta">
-                      <span className="detail-tag" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>{detailAgent.category}</span>
+                      <span className="detail-tag" style={{ background: 'var(--accent-soft)', color: 'var(--color-brand-text)' }}>{detailAgent.category}</span>
                       {detailAgent.isSample && <SampleBadge />}
                       <Stars average={detailAgent.averageRating} count={detailAgent.ratingCount} size={15} />
                     </div>
@@ -282,7 +282,7 @@ export default function App() {
                     <div className="detail-info-grid">
                       <div className="detail-info-item">
                         <div className="detail-info-label">Price</div>
-                        <div className="detail-info-val" style={{ color: 'var(--accent)' }}>{stroopsToXlm(detailAgent.price)} <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-dim)' }}>XLM</span></div>
+                        <div className="detail-info-val" style={{ color: 'var(--color-brand-text)' }}>{stroopsToXlm(detailAgent.price)} <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-dim)' }}>XLM</span></div>
                       </div>
                       <div className="detail-info-item">
                         <div className="detail-info-label">Completed jobs</div>
@@ -488,7 +488,7 @@ export default function App() {
 
                   <div className="dev-layout">
                     <div className="card dev-form-card">
-                      <h3 className="card-heading"><Zap size={18} style={{ color: 'var(--accent)' }} /> Your agent</h3>
+                      <h3 className="card-heading"><Zap size={18} style={{ color: 'var(--color-brand-text)' }} /> Your agent</h3>
                       {!wallet ? (
                         <p style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '16px' }}>Connect Freighter in the Agent dashboard to register an agent or look up the one for your address.</p>
                       ) : registry.status === 'error' ? (

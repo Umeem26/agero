@@ -88,7 +88,7 @@ export default function Playground({ job, onClose }) {
             </div>
             <div>
               <label className="form-label" style={{ fontFamily: 'monospace', fontSize: '11px' }}>HEADER: X-Stellar-Payment-Tx (mock reference)</label>
-              <div className="mono-box" style={{ color: 'var(--accent)' }}>{MOCK_REFERENCE}</div>
+              <div className="mono-box" style={{ color: 'var(--color-brand-text)' }}>{MOCK_REFERENCE}</div>
             </div>
             <div className="form-group" style={{ margin: 0 }}>
               <label className="form-label">Input Text (AI Task)</label>
@@ -113,7 +113,7 @@ export default function Playground({ job, onClose }) {
                 ))
               )}
               {loading && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent)', marginTop: '8px', fontFamily: 'monospace', fontSize: '11px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-brand-text)', marginTop: '8px', fontFamily: 'monospace', fontSize: '11px' }}>
                   <span className="spinner" style={{ width: '12px', height: '12px', borderWidth: '1.5px', margin: 0 }} />
                   <span>Waiting for API response...</span>
                 </div>
