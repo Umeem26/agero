@@ -356,4 +356,27 @@ Dua hal yang mereka butuhkan: tahu **di tahap mana uang berada** dan **berapa la
 
 ---
 
+## 12. Status Fase 4a (2026-10-30)
+
+Commit `72d2c7e`…`d23914e`. Diukur ulang dengan skrip Playwright yang sama (Chromium 1243, `vite preview`, registry Testnet langsung). Screenshot sesudah: `ui-shots/after/` (home, marketplace, detail, modal Hire di 320/375/414/768/1440, plus `nav-menu-open-375.jpg` dan `focus-ring-card-1440.jpg`).
+
+| Cek | Sebelum | Sesudah |
+|---|---|---|
+| Lebar dokumen di 320/375/414 | 711 px | = viewport (juga 768, 900, 1440) |
+| Connect Wallet di layar (320) | x 603–711 | x 126–256 |
+| Kartu agen dicapai lewat Tab | 0 dari 15 | ya, Enter membuka detail |
+| Modal Hire: aria-modal, fokus di dalam, trap, Escape, fokus kembali | tidak ada | semua ya, di 5 lebar |
+| Tombol primer / teks teal / `--text-dim` di modal | 2,86 / 2,47 / 3,32 | 5,38 / 7,29 / 4,93 |
+| Ring fokus input / border input | 1,02 / 1,23 | 5,13 / 3,21 |
+| Animasi berjalan saat `reduce` | 4 + canvas | 0, canvas diam |
+| Transfer Marketplace / Home | 5.990 / 1.912 KB | 520 / 299 KB |
+
+**Selesai:** P0 U01, U02, U03. P1 U04, U05, U06, U07, U08, U14, U16, U17, U18, U19 (bagian canvas: dijeda di luar layar). Juga U25 (deskripsi sampel, atas permintaan; deskripsi on-chain tidak berubah, lihat `docs/deploy.md` §7) dan bagian avatar dari U22.
+
+**Sengaja ditunda ke 4c (bergantung arah visual):** U09 glass/kedalaman, U10 gradien judul, U11 bar aksen kiri, U12 titik terminal, U13 aksen ganda, U15 gambar sampel cacat (ganti/hapus gambar = keputusan arah), U19 latar blob statis. P2 lain (U26 "Read live", U28 judul dokumen, U29 bintang kosong, dll.) belum disentuh.
+
+Belum terukur: modal yang butuh wallet (Rate, Verify, Deliver, Refund, Playground, TxProgress) memakai komponen/hook yang sama dengan Hire, tetapi hanya ditinjau dari kode.
+
+---
+
 *Aturan standar yang diterapkan: token terkunci, gerbang anti-slop, kejujuran konten, state, aksesibilitas, lantai responsif 320/375/414/768. Yang sengaja tidak diterapkan: self-critique 1–5 per arah (arah belum dibangun), uji Flutter (tidak relevan). Label "opini" menandai penilaian estetika.*
