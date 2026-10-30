@@ -47,6 +47,8 @@
      If the palette changes, edit these lines and recompute the ratios. */
   --color-brand-fg-on-brand: var(--mint-ice); /* text on a teal fill: 5.38:1 (4.62 at hover opacity) */
   --color-brand-text: #5cb8b2; /* teal text/icons: 7.29 bg, 6.54 card, 5.55 modal, >= 5.11 on --accent-soft */
+  --color-focus-ring: var(--color-brand-text); /* non-text >= 3:1: 7.29 bg, 6.54 card, 5.55 modal, 5.13 input */
+  --color-border-input: rgba(209, 232, 226, 0.45); /* non-text >= 3:1: 3.21 on input in modal, 3.48 in card */
 
   --radius: 14px;
   --radius-lg: 18px;
@@ -54,6 +56,9 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Keyboard focus: one visible ring for every control */
+:focus-visible { outline: 2px solid var(--color-focus-ring); outline-offset: 2px; }
 
 body {
   font-family: var(--font-main);
@@ -508,7 +513,7 @@ body {
   border-radius: var(--radius-lg);
 }
 .card-link:focus-visible { outline: none; }
-.card-link:focus-visible::after { outline: 2px solid var(--text); outline-offset: -2px; }
+.card-link:focus-visible::after { outline: 2px solid var(--color-focus-ring); outline-offset: -2px; }
 
 .agent-top-row {
   display: flex;
@@ -739,7 +744,7 @@ body {
   width: 100%;
   padding: 11px 14px;
   background: rgba(199,219,247,0.03);
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border-input);
   border-radius: 10px;
   color: var(--text);
   font-family: var(--font-main);
@@ -747,7 +752,8 @@ body {
   transition: var(--transition);
 }
 
-.form-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(17, 100, 102, 0.15); }
+.form-input:focus { border-color: var(--color-focus-ring); }
+.form-input:focus-visible { outline-offset: 1px; }
 .form-input::placeholder { color: var(--text-dim); }
 
 select.form-input {
