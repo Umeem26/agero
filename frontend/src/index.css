@@ -1678,3 +1678,8 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
 .escrow-hash code { font-family: monospace; color: var(--text-secondary); }
 .stat-unit { font-size: 12px; font-weight: 500; color: var(--text-dim); }
 .link-btn { background: none; border: none; padding: 0; color: var(--color-brand-text); cursor: pointer; font: inherit; text-decoration: underline; }
+
+/* ── Phase 4a: touch targets >= 40 px ── */
+.icon-btn, .sim-banner-close { min-width: 40px; min-height: 40px; align-items: center; justify-content: center; }
+.sim-banner-close { margin: -10px -10px -10px 0; }
+.filter-pill, .mode-tab, .wallet-btn, .nav-logo, .nav-link { min-height: 40px; }
