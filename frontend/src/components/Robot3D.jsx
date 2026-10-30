@@ -42,8 +42,6 @@ export function Robot3D() {
       };
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-
     // 3D wireframe head coordinates (scaled up by 1.5x for larger display)
     const baseVertices = [
       // Outer Ring / Shield
@@ -214,12 +212,36 @@ export function Robot3D() {
         ctx.stroke();
       }
 
-      animFrame = requestAnimationFrame(render);
     };
 
+    // Animate only while the canvas is on screen and the user allows motion; otherwise the
+    // first frame stays as a still image and no loop or mousemove listener runs.
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let visible = true;
+    let running = false;
+    const tick = () => { render(); animFrame = requestAnimationFrame(tick); };
+    const update = () => {
+      const shouldRun = visible && !motion.matches;
+      if (shouldRun === running) return;
+      running = shouldRun;
+      if (running) {
+        window.addEventListener('mousemove', handleMouseMove);
+        animFrame = requestAnimationFrame(tick);
+      } else {
+        window.removeEventListener('mousemove', handleMouseMove);
+        cancelAnimationFrame(animFrame);
+      }
+    };
+    const observer = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; update(); });
+
     render();
+    observer.observe(canvas);
+    motion.addEventListener('change', update);
+    update();
 
     return () => {
+      observer.disconnect();
+      motion.removeEventListener('change', update);
       window.removeEventListener('mousemove', handleMouseMove);
       cancelAnimationFrame(animFrame);
     };

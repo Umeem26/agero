@@ -1683,3 +1683,19 @@ textarea.form-input { resize: vertical; min-height: 80px; font-family: inherit; 
 .icon-btn, .sim-banner-close { min-width: 40px; min-height: 40px; align-items: center; justify-content: center; }
 .sim-banner-close { margin: -10px -10px -10px 0; }
 .filter-pill, .mode-tab, .wallet-btn, .nav-logo, .nav-link { min-height: 40px; }
+
+/* ── Phase 4a: prefers-reduced-motion. Decorative animation, hover movement and transitions
+   stop; the spinner keeps turning (slowly) because it is the only loading cue. ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .bg-blob, .bg-atmosphere::before, .glow-pulse { animation: none !important; }
+  .spinner { animation-duration: 1.6s !important; animation-iteration-count: infinite !important; }
+  .card:hover, .agent-card:hover, .btn-primary:hover, .graphic-node:hover,
+  .featured-card:hover .featured-img, .timeline-node:hover .timeline-indicator,
+  .card:hover::before { transform: none; }
+}
