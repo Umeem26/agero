@@ -26,7 +26,7 @@ const REVIEW_HOURS = REVIEW_WINDOW_SECS / HOUR_SECS;
 
 function AgentCard({ agent, onOpen }) {
   return (
-    <div className="card agent-card" onClick={onOpen}>
+    <div className="card agent-card">
       {agent.image && (
         <div className="agent-card-img-wrapper" style={{ height: '140px', overflow: 'hidden', borderBottom: '1px solid var(--border)' }}>
           <img src={agent.image} alt={`${agent.name} (static sample image)`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -34,7 +34,7 @@ function AgentCard({ agent, onOpen }) {
       )}
       <div style={{ padding: '20px' }}>
         <div className="agent-top-row">
-          <h3 className="agent-name">{agent.name}</h3>
+          <h3 className="agent-name"><CardLink onOpen={onOpen}>{agent.name}</CardLink></h3>
           <span className="agent-category">{agent.category}</span>
         </div>
         {agent.isSample && <SampleBadge style={{ marginBottom: '8px' }} />}
@@ -46,6 +46,12 @@ function AgentCard({ agent, onOpen }) {
       </div>
     </div>
   );
+}
+
+// The agent name is the card's real control (keyboard: Tab, Enter/Space); .card-link stretches
+// its click area over the whole card
+function CardLink({ onOpen, children }) {
+  return <button type="button" className="card-link" onClick={onOpen}>{children}</button>;
 }
 
 // Loading / error / empty states for anything that lists registry agents
@@ -79,6 +85,7 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const walletRef = useRef(null);
   const menuBtnRef = useRef(null);
+  const walletBtnRef = useRef(null);
 
   const loadRegistry = useCallback(async () => {
     setRegistry((r) => ({ ...r, status: r.agents.length ? 'refreshing' : 'loading', error: '' }));
@@ -98,16 +105,17 @@ export default function App() {
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
+  // Escape closes the nav menu / wallet dropdown and returns focus to its button
   useEffect(() => {
-    if (!menuOpen) return undefined;
+    if (!menuOpen && !walletOpen) return undefined;
     const onKey = (e) => {
       if (e.key !== 'Escape') return;
-      setMenuOpen(false);
-      menuBtnRef.current?.focus();
+      if (walletOpen) { setWalletOpen(false); walletBtnRef.current?.focus(); }
+      else { setMenuOpen(false); menuBtnRef.current?.focus(); }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [menuOpen]);
+  }, [menuOpen, walletOpen]);
 
   const agentsByOwner = useMemo(() => new Map(registry.agents.map((a) => [a.owner, a])), [registry.agents]);
   const detailAgent = detailOwner ? agentsByOwner.get(detailOwner) : null;
@@ -196,10 +204,10 @@ export default function App() {
         {/* ── Navbar ── */}
         <nav className="navbar">
           <div className="container navbar-inner">
-            <a className="nav-logo" onClick={() => go('home')}>
+            <button type="button" className="nav-logo" aria-label="Agero home" onClick={() => go('home')}>
               <AgeroLogo />
               <span>Agero</span>
-            </a>
+            </button>
 
             {/* Below 900 px the links collapse behind this button (see .nav-menu-btn) */}
             <button
@@ -215,18 +223,19 @@ export default function App() {
             </button>
 
             <div id="nav-links" className={`nav-links ${menuOpen ? 'open' : ''}`}>
-              {PAGES.map((p) => (
-                <button key={p.id} className={`nav-link ${activePage === p.id && !detailAgent ? 'active' : ''}`} onClick={() => go(p.id)}>{p.label}</button>
-              ))}
+              {PAGES.map((p) => {
+                const current = activePage === p.id && !detailAgent;
+                return <button key={p.id} className={`nav-link ${current ? 'active' : ''}`} aria-current={current ? 'page' : undefined} onClick={() => go(p.id)}>{p.label}</button>;
+              })}
             </div>
 
             <div className="wallet-wrapper" ref={walletRef}>
-              <button className={`wallet-btn ${wallet ? 'connected' : ''}`} onClick={() => setWalletOpen(!walletOpen)}>
+              <button ref={walletBtnRef} className={`wallet-btn ${wallet ? 'connected' : ''}`} aria-expanded={walletOpen} aria-controls="wallet-dropdown" onClick={() => setWalletOpen(!walletOpen)}>
                 {wallet ? (<><div className="wallet-dot" />{shortAddress(wallet)}</>) : 'Connect Wallet'}
                 <ChevronDown size={13} className="wallet-chevron" style={{ opacity: 0.4, transform: walletOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
               </button>
               {walletOpen && (
-                <div className="wallet-dropdown">
+                <div className="wallet-dropdown" id="wallet-dropdown">
                   <div className="dropdown-label">Freighter · Stellar Testnet</div>
                   {wallet ? (
                     <>
@@ -357,7 +366,7 @@ export default function App() {
                     <RegistryState registry={registry} onRetry={loadRegistry}>
                       <div className="featured-grid">
                         {featured.map((agent) => (
-                          <div key={agent.owner} className="card featured-card" onClick={() => openAgent(agent.owner)}>
+                          <div key={agent.owner} className="card featured-card">
                             {agent.image && (
                               <div className="featured-img-wrapper">
                                 <img src={agent.image} alt={`${agent.name} (static sample image)`} className="featured-img" />
@@ -366,7 +375,7 @@ export default function App() {
                               </div>
                             )}
                             <div className="featured-body">
-                              <h3 className="featured-name">{agent.name}</h3>
+                              <h3 className="featured-name"><CardLink onOpen={() => openAgent(agent.owner)}>{agent.name}</CardLink></h3>
                               <p className="featured-desc">{agent.summary}</p>
                               <div className="featured-footer">
                                 <span className="featured-price">{stroopsToXlm(agent.price)} XLM</span>
