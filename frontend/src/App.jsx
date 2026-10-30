@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CheckCircle, AlertCircle, X, ChevronDown, ArrowLeft, Shield, Zap, Users } from 'lucide-react';
+import { CheckCircle, AlertCircle, X, ChevronDown, ArrowLeft, Shield, Zap, Users, Menu } from 'lucide-react';
 import { CONFIG, CONFIG_ERROR, explorerAccountUrl, explorerContractUrl } from './chain/config';
 import { connectFreighter } from './chain/wallet';
 import { fetchAgents, fetchJobCount } from './chain/rpc';
@@ -76,7 +76,9 @@ export default function App() {
   const [notification, setNotification] = useState(null);
   const [tx, setTx] = useState(null);
   const [registry, setRegistry] = useState({ status: 'loading', agents: [], jobCount: null, error: '' });
+  const [menuOpen, setMenuOpen] = useState(false);
   const walletRef = useRef(null);
+  const menuBtnRef = useRef(null);
 
   const loadRegistry = useCallback(async () => {
     setRegistry((r) => ({ ...r, status: r.agents.length ? 'refreshing' : 'loading', error: '' }));
@@ -96,6 +98,17 @@ export default function App() {
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      setMenuOpen(false);
+      menuBtnRef.current?.focus();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
+
   const agentsByOwner = useMemo(() => new Map(registry.agents.map((a) => [a.owner, a])), [registry.agents]);
   const detailAgent = detailOwner ? agentsByOwner.get(detailOwner) : null;
   const categories = useMemo(() => ['All', ...new Set(registry.agents.map((a) => a.category))], [registry.agents]);
@@ -108,7 +121,7 @@ export default function App() {
     setTimeout(() => setNotification(null), type === 'error' ? 6000 : 3500);
   };
 
-  const go = (page) => { setActivePage(page); setDetailOwner(null); };
+  const go = (page) => { setActivePage(page); setDetailOwner(null); setMenuOpen(false); };
   const openAgent = (owner) => { setDetailOwner(owner); window.scrollTo(0, 0); };
 
   const handleConnect = async () => {
@@ -188,7 +201,20 @@ export default function App() {
               <span>Agero</span>
             </a>
 
-            <div className="nav-links">
+            {/* Below 900 px the links collapse behind this button (see .nav-menu-btn) */}
+            <button
+              type="button"
+              className="nav-menu-btn"
+              ref={menuBtnRef}
+              aria-expanded={menuOpen}
+              aria-controls="nav-links"
+              aria-label="Menu"
+              onClick={() => setMenuOpen((o) => !o)}
+            >
+              {menuOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
+
+            <div id="nav-links" className={`nav-links ${menuOpen ? 'open' : ''}`}>
               {PAGES.map((p) => (
                 <button key={p.id} className={`nav-link ${activePage === p.id && !detailAgent ? 'active' : ''}`} onClick={() => go(p.id)}>{p.label}</button>
               ))}
@@ -197,7 +223,7 @@ export default function App() {
             <div className="wallet-wrapper" ref={walletRef}>
               <button className={`wallet-btn ${wallet ? 'connected' : ''}`} onClick={() => setWalletOpen(!walletOpen)}>
                 {wallet ? (<><div className="wallet-dot" />{shortAddress(wallet)}</>) : 'Connect Wallet'}
-                <ChevronDown size={13} style={{ opacity: 0.4, transform: walletOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                <ChevronDown size={13} className="wallet-chevron" style={{ opacity: 0.4, transform: walletOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
               </button>
               {walletOpen && (
                 <div className="wallet-dropdown">

@@ -26,12 +26,10 @@ export function Robot3D() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     
-    // Set high-DPI scaling
+    // Set high-DPI scaling. Drawing uses a 500x500 space; CSS scales the canvas to its container.
     const dpr = window.devicePixelRatio || 1;
     canvas.width = 500 * dpr;
     canvas.height = 500 * dpr;
-    canvas.style.width = '500px';
-    canvas.style.height = '500px';
     ctx.scale(dpr, dpr);
 
     const handleMouseMove = (e) => {
@@ -228,9 +226,9 @@ export function Robot3D() {
   }, []);
 
   return (
-    <div style={{ position: 'relative', width: '500px', height: '500px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-      <div style={{ position: 'absolute', width: '350px', height: '350px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(17, 100, 102, 0.15) 0%, transparent 70%)', filter: 'blur(16px)', pointerEvents: 'none' }} />
-      <canvas ref={canvasRef} style={{ display: 'block', pointerEvents: 'auto' }} />
+    <div style={{ position: 'relative', width: '100%', maxWidth: '500px', aspectRatio: '1 / 1', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div style={{ position: 'absolute', width: '70%', height: '70%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(17, 100, 102, 0.15) 0%, transparent 70%)', filter: 'blur(16px)', pointerEvents: 'none' }} />
+      <canvas ref={canvasRef} aria-hidden="true" style={{ display: 'block', width: '100%', height: '100%', pointerEvents: 'auto' }} />
     </div>
   );
 }

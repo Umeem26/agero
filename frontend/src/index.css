@@ -197,6 +197,50 @@ body {
 
 .nav-links { display: flex; gap: 2px; }
 
+/* Compact menu button, only shown below 900 px */
+.nav-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+@media (max-width: 899px) {
+  .navbar-inner { gap: 8px; }
+  .nav-logo { margin-right: auto; }
+  .nav-menu-btn { display: inline-flex; order: 3; }
+  .wallet-wrapper { order: 2; }
+  .nav-links { display: none; }
+  .nav-links.open {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    padding: 8px 16px 16px;
+    background: rgba(23, 29, 27, 0.98);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 12px 30px rgba(8, 11, 10, 0.4);
+  }
+  .nav-links.open .nav-link { text-align: left; padding: 12px 16px; }
+  .nav-links.open .nav-link.active::after { display: none; }
+}
+
+@media (max-width: 479px) {
+  .container { padding: 0 16px; }
+  .wallet-btn { padding: 8px 12px; }
+  .wallet-btn .wallet-chevron { display: none; }
+}
+
 .nav-link {
   background: none;
   border: none;
@@ -264,6 +308,7 @@ body {
   top: calc(100% + 10px);
   right: 0;
   width: 290px;
+  max-width: calc(100vw - 32px);
   background: rgba(44, 53, 49, 0.96);
   backdrop-filter: blur(24px);
   border: 1px solid var(--border-hover);
@@ -902,6 +947,7 @@ select.form-input option {
   display: flex;
   align-items: center;
   gap: 8px;
+  max-width: calc(100vw - 40px);
   box-shadow: 0 8px 32px rgba(0,0,0,0.4);
   animation: dropIn 0.25s ease;
 }
