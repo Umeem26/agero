@@ -5,7 +5,7 @@
     "category": "Text",
     "price_xlm": "100",
     "description": "Example: a document summarizer that returns bullet-point summaries of long texts.",
-    "image": "/agent_summarizer.png"
+    "image": "/agent_summarizer.webp"
   },
   {
     "slug": "image-generator-pro",
@@ -13,7 +13,7 @@
     "category": "Creative",
     "price_xlm": "500",
     "description": "Example: an image service for illustrations and marketing graphics in several styles.",
-    "image": "/agent_imagegen.png"
+    "image": "/agent_imagegen.webp"
   },
   {
     "slug": "translation-bot-xl",
@@ -21,7 +21,7 @@
     "category": "Utility",
     "price_xlm": "50",
     "description": "Example: a translation service that also handles informal Southeast Asian language.",
-    "image": "/agent_translator.png"
+    "image": "/agent_translator.webp"
   },
   {
     "slug": "code-auditor-ai",
@@ -29,7 +29,7 @@
     "category": "Utility",
     "price_xlm": "800",
     "description": "Example: a review of Soroban Rust and Solidity contracts, delivered as a written report.",
-    "image": "/agent_auditor.png"
+    "image": "/agent_auditor.webp"
   },
   {
     "slug": "data-analyst-bot",
@@ -37,7 +37,7 @@
     "category": "Text",
     "price_xlm": "300",
     "description": "Example: a service that summarizes CSV, JSON and spreadsheet data with charts.",
-    "image": "/agent_data.png"
+    "image": "/agent_data.webp"
   },
   {
     "slug": "voice-cloner-ai",
@@ -45,7 +45,7 @@
     "category": "Creative",
     "price_xlm": "600",
     "description": "Example: a voice-over service for dubbing and narration based on a short voice sample.",
-    "image": "/agent_voice.png"
+    "image": "/agent_voice.webp"
   },
   {
     "slug": "music-composer-ai",
@@ -53,7 +53,7 @@
     "category": "Creative",
     "price_xlm": "400",
     "description": "Example: background music composed from a text brief, genre and tempo.",
-    "image": "/agent_music.png"
+    "image": "/agent_music.webp"
   },
   {
     "slug": "seo-optimizer-bot",
@@ -61,7 +61,7 @@
     "category": "Utility",
     "price_xlm": "200",
     "description": "Example: a review of a web page with suggested metadata and structure changes.",
-    "image": "/agent_seo.png"
+    "image": "/agent_seo.webp"
   },
   {
     "slug": "chatbot-assistant",
@@ -69,7 +69,7 @@
     "category": "Text",
     "price_xlm": "250",
     "description": "Example: a support chatbot set up from your product manuals or knowledge base.",
-    "image": "/agent_chatbot.png"
+    "image": "/agent_chatbot.webp"
   },
   {
     "slug": "sentiment-analyst",
@@ -77,7 +77,7 @@
     "category": "Text",
     "price_xlm": "150",
     "description": "Example: sentiment scoring of reviews, survey answers and social media posts.",
-    "image": "/agent_sentiment.png"
+    "image": "/agent_sentiment.webp"
   },
   {
     "slug": "video-generator-ai",
@@ -85,6 +85,6 @@
     "category": "Creative",
     "price_xlm": "700",
     "description": "Example: a short captioned video made from a script you provide.",
-    "image": "/agent_video.png"
+    "image": "/agent_video.webp"
   }
 ]

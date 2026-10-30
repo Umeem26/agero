@@ -29,7 +29,7 @@ function AgentCard({ agent, onOpen }) {
     <div className="card agent-card">
       {agent.image && (
         <div className="agent-card-img-wrapper" style={{ height: '140px', overflow: 'hidden', borderBottom: '1px solid var(--border)' }}>
-          <img src={agent.image} alt={`${agent.name} (static sample image)`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <img src={agent.image} alt={`${agent.name} (static sample image)`} width={768} height={768} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
       )}
       <div style={{ padding: '20px' }}>
@@ -308,7 +308,7 @@ export default function App() {
                       <div style={{ marginBottom: '24px' }}>
                         <div className="field-caption">Sample image (static, not agent output)</div>
                         <div style={{ overflow: 'hidden', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                          <img src={detailAgent.image} alt={`${detailAgent.name} static sample image`} style={{ width: '100%', height: 'auto', display: 'block', maxHeight: '300px', objectFit: 'cover' }} />
+                          <img src={detailAgent.image} alt={`${detailAgent.name} static sample image`} width={768} height={768} decoding="async" style={{ width: '100%', height: 'auto', display: 'block', maxHeight: '300px', objectFit: 'cover' }} />
                         </div>
                       </div>
                     )}
@@ -370,7 +370,7 @@ export default function App() {
                           <div key={agent.owner} className="card featured-card">
                             {agent.image && (
                               <div className="featured-img-wrapper">
-                                <img src={agent.image} alt={`${agent.name} (static sample image)`} className="featured-img" />
+                                <img src={agent.image} alt={`${agent.name} (static sample image)`} width={768} height={768} loading="lazy" decoding="async" className="featured-img" />
                                 <div className="featured-category">{agent.category}</div>
                                 {agent.isSample && <SampleBadge style={{ position: 'absolute', top: '12px', right: '12px' }} />}
                               </div>
