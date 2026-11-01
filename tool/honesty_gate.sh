@@ -47,6 +47,9 @@ BANNED_PHRASES=(
   "real agent is live"
   "runs on Agero"
   "Agero executes"
+  # 2026-11-01 banner: six signed writes tested by hand; refunds and release_job not yet
+  "fully tested"
+  "all writes tested"
 )
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

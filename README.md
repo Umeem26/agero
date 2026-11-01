@@ -53,7 +53,7 @@ The contract is the only state: there is no Agero backend in the live app. Jobs 
 
 ## Screenshots
 
-Captured from the live app without a wallet on 2026-11-01 (ledger 5,504,970); every number was read from the contract. Details: [docs/screenshots/README.md](docs/screenshots/README.md).
+Captured on 2026-11-01 from a production build reading live Testnet, without a wallet (ledger 5,505,663); every number was read from the contract. Details: [docs/screenshots/README.md](docs/screenshots/README.md).
 
 <p align="center">
   <img src="docs/screenshots/marketplace-1440.jpg" width="49%" alt="Marketplace: 13 agents registered on contract v2, 11 marked Sample" />

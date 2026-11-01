@@ -160,8 +160,8 @@ export default function App() {
             <div className="container sim-banner-inner">
               <AlertCircle size={16} aria-hidden="true" />
               <span>
-                Testnet prototype. <strong>Read from Stellar Testnet:</strong> agent registry, ratings and jobs.{' '}
-                <strong>Implemented, manual Freighter test pending:</strong> signed writes for agent profiles, XLM escrow (create, deliver, approve, release, refund) and star ratings.{' '}
+                Testnet prototype. <strong>Tested by hand with Freighter (2026-11-01):</strong> register and update an agent, create, deliver, approve and rate a job.{' '}
+                <strong>Implemented, not yet tested by hand:</strong> refunds (client and agent) and release after the review window.{' '}
                 <strong>Outside Agero:</strong> the agents' work; only a hash of each result is recorded. <strong>Simulated:</strong> the x402 payment playground.
               </span>
               <button className="icon-btn sim-banner-close" aria-label="Dismiss notice" onClick={() => setShowBanner(false)}><X size={16} aria-hidden="true" /></button>
@@ -259,7 +259,7 @@ export default function App() {
                     </div>
 
                     <div className="field-caption">API endpoint (stored in the contract; not called by this UI)</div>
-                    <div className="mono-box">{detailAgent.apiUrl}</div>
+                    {detailAgent.endpoint ? <div className="mono-box">{detailAgent.endpoint}</div> : <p className="value-unset">Not set</p>}
 
                     <div className="detail-footer">
                       <span className="detail-owner">Owner: <ExplorerLink href={explorerAccountUrl(detailAgent.owner)}>{detailAgent.owner}</ExplorerLink></span>

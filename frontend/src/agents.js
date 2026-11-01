@@ -16,6 +16,8 @@ export function presentAgent(agent) {
     isSample,
     summary: isSample ? (extra?.description ?? agent.description.slice(SAMPLE_PREFIX.length)) : agent.description,
     category: extra?.category ?? 'Other',
+    // api_url is optional in the contract; null when the owner left it empty
+    endpoint: String(agent.apiUrl ?? '').trim() || null,
     averageRating: agent.ratingCount > 0 ? Number(agent.ratingSum) / agent.ratingCount : 0,
   };
 }

@@ -31,6 +31,14 @@ describe('presentAgent', () => {
   });
 });
 
+describe('presentAgent endpoint', () => {
+  it('is null when the owner left api_url empty or blank, otherwise the trimmed URL', () => {
+    expect(presentAgent(onChain({ apiUrl: '' })).endpoint).toBeNull();
+    expect(presentAgent(onChain({ apiUrl: '   ' })).endpoint).toBeNull();
+    expect(presentAgent(onChain({ apiUrl: ' https://example.com/api ' })).endpoint).toBe('https://example.com/api');
+  });
+});
+
 describe('sample-agents.json', () => {
   it('makes no AI, speed, live-data or capacity claims in the descriptions', () => {
     for (const a of SAMPLE_AGENTS) {

@@ -489,6 +489,7 @@ p.form-hint { margin: var(--s-2) 0; }
 
 .field-caption { font-size: var(--text-xs); font-weight: 600; color: var(--fg-dim); margin-bottom: var(--s-2); }
 .mono-box { font: var(--text-xs) var(--font-mono); padding: var(--s-2) var(--s-3); margin-bottom: var(--s-4); background: var(--surface-0); border: 1px solid var(--border); border-radius: var(--r-sm); overflow-wrap: anywhere; }
+.value-unset { margin: 0 0 var(--s-4); font-size: var(--text-sm); color: var(--fg-dim); }
 .cli-box { font: var(--text-xs) var(--font-mono); padding: var(--s-3); margin-bottom: var(--s-4); background: var(--surface-0); border: 1px solid var(--border); border-radius: var(--r-sm); white-space: pre; overflow-x: auto; }
 
 .review-notes { font-size: var(--text-sm); color: var(--fg-dim); padding-left: var(--s-5); margin-bottom: var(--s-4); }
