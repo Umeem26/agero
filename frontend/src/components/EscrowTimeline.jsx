@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pause, Play, RotateCcw, SkipForward } from 'lucide-react';
+import { ArrowLeftRight, ArrowRight, Pause, Play, RotateCcw, SkipForward } from 'lucide-react';
 import { JobStatus } from '../chain/jobs';
 import { StatusBadge } from './jobUi';
 import DeadlineMeter from './DeadlineMeter';
@@ -34,6 +34,9 @@ const PATHS = {
     { name: 'Refunded', at: 0, status: JobStatus.REFUNDED, text: `refund_job: the ${AMOUNT} XLM goes back to the client. The job is closed.` },
   ],
 };
+// Arrow on each column border (Client|Escrow, Escrow|Agent): the route the XLM can take, shown
+// before Play so the movement reads from the first frame. null: the XLM never crosses that border.
+const ROUTES = { approved: [ArrowRight, ArrowRight], refunded: [ArrowLeftRight, null] };
 const STEP_MS = 1600;
 
 function usePrefersReducedMotion() {
@@ -88,7 +91,15 @@ export default function EscrowTimeline() {
 
       <div className="tl-accounts">
         {ACCOUNTS.map((name, i) => (
-          <div key={name} className={`tl-account ${cur.at === i ? 'is-holding' : ''}`}>{name}</div>
+          <div key={name} className={`tl-account ${cur.at === i ? 'is-holding' : ''}`}>
+            {name}
+            <span className="tl-slot" aria-hidden="true" />
+          </div>
+        ))}
+        {ROUTES[outcome].map((Arrow, gap) => Arrow && (
+          <span key={gap} className={`tl-arrow tl-gap-${gap} ${steps.slice(0, step + 1).some((s) => s.at > gap) ? 'is-crossed' : ''}`} aria-hidden="true">
+            <Arrow size={14} />
+          </span>
         ))}
         <div className={`tl-token tl-pos-${cur.at}`} aria-hidden="true"><span>{AMOUNT} XLM</span></div>
       </div>

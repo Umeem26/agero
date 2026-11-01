@@ -23,6 +23,24 @@ export function ContractMark() {
   return <span className="src-chain" title="Read from the Agero contract on Stellar Testnet">on contract</span>;
 }
 
+// One source marker for a whole agent list, so the cards themselves only flag UI-only fields
+export function ListSourceNote() {
+  return (
+    <p className="list-source">
+      <span className="src-chain">All listed values are read from the contract</span>, except fields marked <span className="src-ui-flag">UI-only</span>.
+    </p>
+  );
+}
+
+// The category exists only in this frontend; the contract does not store it
+export function CategoryChip({ category }) {
+  return (
+    <span className="src-ui" title="Category is set in this frontend; the contract does not store it">
+      {category}<span className="src-ui-flag"> UI-only</span>
+    </span>
+  );
+}
+
 export function ExplorerLink({ href, children }) {
   return (
     <a className="explorer-link" href={href} target="_blank" rel="noreferrer">

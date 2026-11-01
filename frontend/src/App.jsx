@@ -8,7 +8,7 @@ import { REVIEW_WINDOW_SECS, HOUR_SECS } from './chain/jobs';
 import { stroopsToXlm } from './chain/units';
 import { presentAgent, shortAddress } from './agents';
 import AgeroLogo from './components/AgeroLogo';
-import { Stars, SampleBadge, ContractMark, ExplorerLink, EmptyState, ErrorState, SkeletonCards, StatCard } from './components/ui';
+import { Stars, SampleBadge, CategoryChip, ContractMark, ListSourceNote, ExplorerLink, EmptyState, ErrorState, SkeletonCards, StatCard } from './components/ui';
 import AgentCard from './components/AgentCard';
 import AddressGlyph from './components/AddressGlyph';
 import ContractPulse from './components/ContractPulse';
@@ -242,7 +242,7 @@ export default function App() {
                         <h1 className="detail-name">{detailAgent.name}</h1>
                         <div className="detail-meta">
                           {detailAgent.isSample && <SampleBadge />}
-                          <span className="src-ui" title="Category is set in this frontend; the contract does not store it">{detailAgent.category}</span>
+                          <CategoryChip category={detailAgent.category} />
                         </div>
                       </div>
                     </div>
@@ -299,16 +299,16 @@ export default function App() {
                         <button className="btn btn-primary btn-lg" onClick={() => go('marketplace')}>Explore marketplace</button>
                         <button className="btn btn-outline btn-lg" onClick={() => go('jobs')}>My Jobs</button>
                       </div>
+                      <ContractPulse />
                     </div>
                     <EscrowTimeline />
                   </section>
-
-                  <ContractPulse />
 
                   <section className="home-section">
                     <h2 className="section-title">Registered agents</h2>
                     <p className="section-desc">Read from the Agero contract on Stellar Testnet when the page loads.</p>
                     <RegistryState registry={registry} onRetry={loadRegistry}>
+                      <ListSourceNote />
                       <div className="agent-grid">
                         {featured.map((agent) => <AgentCard key={agent.owner} agent={agent} onOpen={() => openAgent(agent.owner)} />)}
                       </div>
@@ -343,6 +343,7 @@ export default function App() {
                         <button key={c} className={`filter-pill ${selectedCategory === c ? 'active' : ''}`} aria-pressed={selectedCategory === c} onClick={() => setSelectedCategory(c)}>{c}</button>
                       ))}
                     </div>
+                    <ListSourceNote />
                     <div className="agent-grid">
                       {filtered.map((agent) => <AgentCard key={agent.owner} agent={agent} onOpen={() => openAgent(agent.owner)} />)}
                     </div>
