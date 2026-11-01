@@ -23,6 +23,36 @@ import { createFileStore, createMemoryStore, keys } from './store.js';
 const DEFAULT_STORE = fileURLToPath(new URL('./.data/agero-store.json', import.meta.url));
 const say = (label, value) => console.log(`${label.padEnd(12)}${redact(value)}`);
 
+// Dry run: the same checks as a real run, without claiming the job or sending anything
+async function runCheck({ jobId, input, config, chain, store, executor, key, agent }) {
+  let parsed;
+  try { parsed = executor.parseInput(input); } catch (err) { say('check', `INVALID_INPUT: ${err.message}`); return 1; }
+  const inputHash = sha256Hex(canonicalJson(parsed));
+  const [job, ledger, record] = await Promise.all([chain.getJob(jobId), chain.ledgerNow(), store.get(keys.job(config.contractId, jobId))]);
+  const res = checkJob({
+    job, agent, agentPublic: key.publicKey, ledgerNow: ledger.time, signer: null, trustedLocal: true, record, inputHash,
+    nowUnix: Math.floor(Date.now() / 1000), marginSecs: config.limits.safetyMarginSecs,
+  });
+  say('input_hash', inputHash);
+  if (job) say('deadline in', `${job.deadline - ledger.time} s (ledger ${ledger.ledger})`);
+  if (!res.ok) { say('check', res.code); return 1; }
+  say('check', `OK${res.resume ? ' (resumes a stored record)' : ''}; nothing was sent`);
+  return 0;
+}
+
+function printResult(res, out) {
+  say('status', `${res.status}${res.replay ? ' (stored outcome, nothing sent again)' : ''}`);
+  for (const field of ['input_hash', 'result_hash', 'deliver_tx', 'refund_tx']) {
+    if (res.record?.[field]) say(field, res.record[field]);
+  }
+  if (!res.ok) { say('error', `${res.code}: ${res.message}`); return 1; }
+  if (out) {
+    writeFileSync(out, res.result, 'utf8');
+    say('result file', `${out} (SHA-256 ${sha256Hex(readFileSync(out))})`);
+  }
+  return 0;
+}
+
 async function main() {
   const { values } = parseArgs({
     options: {
@@ -39,7 +69,8 @@ async function main() {
     console.log('Usage: node frontend/server/cli.mjs --job <id> (--input <json> | --input-file <path>) [--out <file>] [--check] [--memory]');
     return values.help ? 0 : 2;
   }
-  const input = values.input ?? readFileSync(values['input-file'], 'utf8');
+  // PowerShell 5.1 writes UTF-8 files with a BOM
+  const input = values.input ?? readFileSync(values['input-file'], 'utf8').replace(/^\uFEFF/, '');
 
   const config = loadConfig(process.env);
   assertTestnetConfig(config);
@@ -57,41 +88,18 @@ async function main() {
   say('executor', `${executor.id}@${executor.version}, ${executor.kind}`);
   say('job', values.job);
 
-  if (values.check) {
-    // Dry run: the same checks as a real run, without claiming the job or sending anything
-    let parsed;
-    try { parsed = executor.parseInput(input); } catch (err) { say('check', `INVALID_INPUT: ${err.message}`); return 1; }
-    const inputHash = sha256Hex(canonicalJson(parsed));
-    const [job, ledger, record] = await Promise.all([chain.getJob(values.job), chain.ledgerNow(), store.get(keys.job(config.contractId, values.job))]);
-    const res = checkJob({ job, agent, agentPublic: key.publicKey, ledgerNow: ledger.time, signer: null, trustedLocal: true, record, inputHash, nowUnix: Math.floor(Date.now() / 1000), marginSecs: config.limits.safetyMarginSecs });
-    say('input_hash', inputHash);
-    if (job) say('deadline in', `${job.deadline - ledger.time} s (ledger ${ledger.ledger})`);
-    say('check', res.ok ? `OK${res.resume ? ' (resumes a stored record)' : ''}; nothing was sent` : res.code);
-    return res.ok ? 0 : 1;
-  }
-
+  if (values.check) return runCheck({ jobId: values.job, input, config, chain, store, executor, key, agent });
   const res = await runJob({ jobId: values.job, input, trustedLocal: true }, {
     config, chain, store, executor, agentPublic: key.publicKey,
     log: (event, fields) => console.log(`  [${event}] ${redact(JSON.stringify(fields))}`),
   });
-  say('status', `${res.status}${res.replay ? ' (stored outcome, nothing sent again)' : ''}`);
-  if (res.record?.input_hash) say('input_hash', res.record.input_hash);
-  if (res.record?.result_hash) say('result_hash', res.record.result_hash);
-  if (res.record?.deliver_tx) say('deliver_tx', res.record.deliver_tx);
-  if (res.record?.refund_tx) say('refund_tx', res.record.refund_tx);
-  if (!res.ok) say('error', `${res.code}: ${res.message}`);
-  if (res.ok && values.out) {
-    writeFileSync(values.out, res.result, 'utf8');
-    say('result file', `${values.out} (SHA-256 ${sha256Hex(readFileSync(values.out))})`);
-  }
-  return res.ok ? 0 : 1;
+  return printResult(res, values.out);
 }
 
-main().then(
-  (code) => { process.exitCode = code; },
-  (err) => {
-    const code = err instanceof AgentError ? err.code : 'ERROR';
-    console.error(`error ${code}: ${redact(err?.message ?? err)}`);
-    process.exitCode = 2;
-  },
-);
+try {
+  process.exitCode = await main();
+} catch (err) {
+  const code = err instanceof AgentError ? err.code : 'ERROR';
+  console.error(`error ${code}: ${redact(err?.message ?? err)}`);
+  process.exitCode = 2;
+}
