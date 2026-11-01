@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="952" viewBox="0 0 960 952" role="img" aria-labelledby="t d">
+<title id="t">Agero fase 5: alur agen nyata</title>
+<desc id="d">Diagram urutan rancangan (belum dibangun): klien membuat job, menandatangani pesan SEP-53, API memverifikasi job di kontrak, menjalankan executor, menyimpan hasil, memanggil deliver_job, lalu UI membandingkan hash hasil dengan result_hash di kontrak.</desc>
+<rect width="960" height="952" fill="#171d1b"/>
+<text x="32" y="40" font-family="'IBM Plex Sans Condensed', 'Arial Narrow', Arial, sans-serif" font-size="20" font-weight="600" fill="#d1e8e2">Fase 5: alur agen nyata (rancangan, belum dibangun)</text>
+<line x1="96" y1="120" x2="96" y2="848" stroke="#3b4843" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="16" y="72" width="160" height="48" rx="8" fill="#1f2724" stroke="#3b4843" stroke-width="1"/>
+<text x="96" y="92" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="14" font-weight="600" fill="#d1e8e2">Klien</text>
+<text x="96" y="110" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">browser + dompet</text>
+<line x1="288" y1="120" x2="288" y2="848" stroke="#3b4843" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="208" y="72" width="160" height="48" rx="8" fill="#1f2724" stroke="#3b4843" stroke-width="1"/>
+<text x="288" y="92" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="14" font-weight="600" fill="#d1e8e2">UI Agero</text>
+<text x="288" y="110" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">SPA Vite</text>
+<line x1="480" y1="120" x2="480" y2="848" stroke="#3b4843" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="400" y="72" width="160" height="48" rx="8" fill="#1f2724" stroke="#3b4843" stroke-width="1"/>
+<text x="480" y="92" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="14" font-weight="600" fill="#d1e8e2">API</text>
+<text x="480" y="110" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">Vercel Function</text>
+<line x1="672" y1="120" x2="672" y2="848" stroke="#3b4843" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="592" y="72" width="160" height="48" rx="8" fill="#1f2724" stroke="#3b4843" stroke-width="1"/>
+<text x="672" y="92" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="14" font-weight="600" fill="#d1e8e2">Store</text>
+<text x="672" y="110" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">Redis (Upstash)</text>
+<line x1="864" y1="120" x2="864" y2="848" stroke="#3b4843" stroke-width="1" stroke-dasharray="4 4"/>
+<rect x="784" y="72" width="160" height="48" rx="8" fill="#1f2724" stroke="#3b4843" stroke-width="1"/>
+<text x="864" y="92" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="14" font-weight="600" fill="#d1e8e2">Kontrak v2</text>
+<text x="864" y="110" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">Soroban Testnet</text>
+<line x1="96" y1="176" x2="856" y2="176" stroke="#a3b7b1" stroke-width="1"/>
+<polygon points="860,176 852,172 852,180" fill="#a3b7b1"/>
+<rect x="326" y="156" width="308" height="16" fill="#171d1b"/>
+<text x="480" y="168" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#d1e8e2"><tspan font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">01  </tspan>create_job (tx, ditandatangani klien)</text>
+<rect x="432" y="180" width="96" height="12" fill="#171d1b"/>
+<text x="480" y="190" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">status Pending</text>
+<line x1="288" y1="216" x2="472" y2="216" stroke="#a3b7b1" stroke-width="1"/>
+<polygon points="476,216 468,212 468,220" fill="#a3b7b1"/>
+<rect x="296" y="196" width="176" height="16" fill="#171d1b"/>
+<text x="384" y="208" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#d1e8e2"><tspan font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">02  </tspan>POST /api/challenge</text>
+<rect x="298" y="220" width="172" height="12" fill="#171d1b"/>
+<text x="384" y="230" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">{job_id, address, purpose}</text>
+<line x1="480" y1="256" x2="664" y2="256" stroke="#a3b7b1" stroke-width="1"/>
+<polygon points="668,256 660,252 660,260" fill="#a3b7b1"/>
+<rect x="512" y="236" width="128" height="16" fill="#171d1b"/>
+<text x="576" y="248" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#d1e8e2"><tspan font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">03  </tspan>simpan nonce</text>
+<rect x="518" y="260" width="116" height="12" fill="#171d1b"/>
+<text x="576" y="270" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">SET NX, TTL 300 s</text>
+<line x1="480" y1="296" x2="296" y2="296" stroke="#a3b7b1" stroke-width="1"/>
+<polygon points="292,296 300,292 300,300" fill="#a3b7b1"/>
+<rect x="310" y="276" width="148" height="16" fill="#171d1b"/>
+<text x="384" y="288" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#d1e8e2"><tspan font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">04  </tspan>pesan tantangan</text>
+<rect x="320" y="300" width="128" height="12" fill="#171d1b"/>
+<text x="384" y="310" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">teks SEP-53 lengkap</text>
+<line x1="288" y1="336" x2="104" y2="336" stroke="#a3b7b1" stroke-width="1"/>
+<polygon points="100,336 108,332 108,340" fill="#a3b7b1"/>
+<rect x="106" y="316" width="172" height="16" fill="#171d1b"/>
+<text x="192" y="328" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#d1e8e2"><tspan font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">05  </tspan>signMessage(pesan)</text>
+<rect x="120" y="340" width="144" height="12" fill="#171d1b"/>
+<text x="192" y="350" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">popup Freighter/Varial</text>
+<line x1="96" y1="376" x2="280" y2="376" stroke="#a3b7b1" stroke-width="1"/>
+<polygon points="284,376 276,372 276,380" fill="#a3b7b1"/>
+<rect x="128" y="356" width="128" height="16" fill="#171d1b"/>
+<text x="192" y="368" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#d1e8e2"><tspan font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">06  </tspan>tanda tangan</text>
+<rect x="140" y="380" width="104" height="12" fill="#171d1b"/>
+<text x="192" y="390" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">base64, 64 byte</text>
+<line x1="288" y1="416" x2="472" y2="416" stroke="#a3b7b1" stroke-width="1"/>
+<polygon points="476,416 468,412 468,420" fill="#a3b7b1"/>
+<rect x="270" y="396" width="228" height="16" fill="#171d1b"/>
+<text x="384" y="408" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#d1e8e2"><tspan font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">07  </tspan>POST /api/jobs/{id}/submit</text>
+<rect x="296" y="420" width="176" height="12" fill="#171d1b"/>
+<text x="384" y="430" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">{input, message, signature}</text>
+<rect x="472" y="436" width="16" height="32" rx="2" fill="#2c3531" stroke="#a3b7b1" stroke-width="1"/>
+<rect x="496" y="436" width="208" height="32" rx="4" fill="#171d1b"/>
+<text x="500" y="450" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#d1e8e2"><tspan font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">08  </tspan>verifyMessage + cek pesan</text>
+<text x="524" y="464" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">nonce, domain, input_sha256</text>
+<line x1="480" y1="496" x2="856" y2="496" stroke="#a3b7b1" stroke-width="1"/>
+<polygon points="860,496 852,492 852,500" fill="#a3b7b1"/>
+<rect x="536" y="476" width="272" height="16" fill="#171d1b"/>
+<text x="672" y="488" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#d1e8e2"><tspan font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">09  </tspan>get_job, get_agent, waktu ledger</text>
+<rect x="580" y="500" width="184" height="12" fill="#171d1b"/>
+<text x="672" y="510" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">simulasi, tanpa tanda tangan</text>
+<line x1="480" y1="536" x2="664" y2="536" stroke="#a3b7b1" stroke-width="1"/>
+<polygon points="668,536 660,532 660,540" fill="#a3b7b1"/>
+<rect x="470" y="516" width="212" height="16" fill="#171d1b"/>
+<text x="576" y="528" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#d1e8e2"><tspan font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">10  </tspan>klaim job + batas harian</text>
+<rect x="522" y="540" width="108" height="12" fill="#171d1b"/>
+<text x="576" y="550" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">SET NX job, INCR</text>
+<rect x="472" y="556" width="16" height="32" rx="2" fill="#2c3531" stroke="#a3b7b1" stroke-width="1"/>
+<rect x="496" y="556" width="192" height="32" rx="4" fill="#171d1b"/>
+<text x="500" y="570" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#d1e8e2"><tspan font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">11  </tspan>executor.run(input)</text>
+<text x="524" y="584" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">deterministik, timeout 20 s</text>
+<line x1="480" y1="616" x2="664" y2="616" stroke="#a3b7b1" stroke-width="1"/>
+<polygon points="668,616 660,612 660,620" fill="#a3b7b1"/>
+<rect x="462" y="596" width="228" height="16" fill="#171d1b"/>
+<text x="576" y="608" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#d1e8e2"><tspan font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">12  </tspan>simpan hasil + result_hash</text>
+<rect x="494" y="620" width="164" height="12" fill="#171d1b"/>
+<text x="576" y="630" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">sebelum transaksi apa pun</text>
+<line x1="480" y1="656" x2="856" y2="656" stroke="#5cb8b2" stroke-width="1"/>
+<polygon points="860,656 852,652 852,660" fill="#5cb8b2"/>
+<rect x="554" y="636" width="236" height="16" fill="#171d1b"/>
+<text x="672" y="648" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#5cb8b2"><tspan font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">13  </tspan>deliver_job(job_id, sha256)</text>
+<rect x="590" y="660" width="164" height="12" fill="#171d1b"/>
+<text x="672" y="670" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">ditandatangani kunci agen</text>
+<line x1="480" y1="696" x2="296" y2="696" stroke="#a3b7b1" stroke-width="1"/>
+<polygon points="292,696 300,692 300,700" fill="#a3b7b1"/>
+<rect x="278" y="676" width="212" height="16" fill="#171d1b"/>
+<text x="384" y="688" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#d1e8e2"><tspan font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">14  </tspan>status delivered + hasil</text>
+<rect x="332" y="700" width="104" height="12" fill="#171d1b"/>
+<text x="384" y="710" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">tx hash deliver</text>
+<line x1="288" y1="736" x2="856" y2="736" stroke="#a3b7b1" stroke-width="1"/>
+<polygon points="860,736 852,732 852,740" fill="#a3b7b1"/>
+<rect x="530" y="716" width="92" height="16" fill="#171d1b"/>
+<text x="576" y="728" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#d1e8e2"><tspan font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">15  </tspan>get_job</text>
+<rect x="498" y="740" width="156" height="12" fill="#171d1b"/>
+<text x="576" y="750" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">result_hash dari kontrak</text>
+<rect x="280" y="756" width="16" height="32" rx="2" fill="#2c3531" stroke="#5cb8b2" stroke-width="1"/>
+<rect x="304" y="756" width="228" height="32" rx="4" fill="#171d1b"/>
+<text x="308" y="770" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#5cb8b2"><tspan font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">16  </tspan>sha256(hasil) == result_hash</text>
+<text x="332" y="784" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">Match / No match</text>
+<line x1="96" y1="816" x2="856" y2="816" stroke="#a3b7b1" stroke-width="1"/>
+<polygon points="860,816 852,812 852,820" fill="#a3b7b1"/>
+<rect x="340" y="796" width="280" height="16" fill="#171d1b"/>
+<text x="480" y="808" text-anchor="middle" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#d1e8e2"><tspan font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">17  </tspan>complete_job (atau tunggu 72 jam)</text>
+<rect x="442" y="820" width="76" height="12" fill="#171d1b"/>
+<text x="480" y="830" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">XLM ke agen</text>
+<rect x="32" y="872" width="896" height="56" rx="8" fill="#1f2724" stroke="#3b4843" stroke-width="1"/>
+<text x="48" y="896" font-family="Inter, 'Segoe UI', Arial, sans-serif" font-size="13" fill="#d1e8e2">Gagal sesudah langkah 10 (executor galat/timeout, hasil tak tersimpan): API memanggil refund_job sebagai agen; XLM kembali ke klien.</text>
+<text x="48" y="916" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="11" fill="#a3b7b1">Gagal sebelum langkah 10: tidak ada transaksi; klien boleh refund sendiri setelah tenggat. Detail: docs/fase5-design.md §6</text>
+</svg>
