@@ -1,7 +1,7 @@
 // Job rules mirrored from contracts/agero-contract/src/lib.rs (see docs/contract-v2.md).
 // This is the only place in the frontend that knows the numeric JobStatus codes.
-import { stroopsToXlm, xlmToStroops } from './units';
-import { bytesToHex } from './hash';
+import { stroopsToXlm, xlmToStroops } from './units.js';
+import { bytesToHex } from './hash.js';
 
 export const JobStatus = Object.freeze({ PENDING: 0, DELIVERED: 1, COMPLETED: 2, REFUNDED: 3 });
 const STATUS_LABELS = Object.freeze(['Pending', 'Delivered', 'Completed', 'Refunded']);

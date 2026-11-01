@@ -1,6 +1,6 @@
 // SHA-256 result hashes for deliver_job (BytesN<32>), computed locally with Web Crypto.
 // Nothing here sends data anywhere: the bytes stay in the browser and only the 32-byte digest is used.
-import { ChainError } from './errors';
+import { ChainError } from './errors.js';
 
 export const HASH_BYTES = 32;
 // Web Crypto has no streaming digest, so the whole file is read into memory
