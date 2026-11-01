@@ -1,8 +1,8 @@
 # Agero — aturan tetap
 
 Prototype: frontend MEMBACA registry/rating/job dari kontrak escrow v2 di Testnet. Jalur TULIS lewat
-Freighter (klien: create/complete/refund/rate, §9; agen: register/update/deliver/release/refund, §10)
-sudah ditulis tetapi belum teruji manual (`docs/deploy.md`). Semua tulis lewat satu `invoke` di
+Freighter: create/complete/rate (klien) dan register/update/deliver (agen) diuji manual 2026-11-01
+(job #2, `docs/deploy.md` §11); refund (klien dan agen), release dan sisa checklist §9/§10 belum. Semua tulis lewat satu `invoke` di
 `frontend/src/chain/rpc.js`. x402 simulasi; Agero tidak menjalankan agen (hanya hash hasil yang dicatat).
 Lihat `docs/audit/agero-audit.md`.
 

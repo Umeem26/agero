@@ -197,7 +197,7 @@ Versi yang dipakai: `@stellar/stellar-sdk` 17.4.0 (Testnet di protokol 29 saat d
 
 ## 9. Checklist uji manual (UI + Freighter)
 
-Belum pernah dijalankan. Sampai semua langkah 1–10 lulus, baris "UI writes to the contract" dan "Freighter wallet" di README tetap `🟡 Implemented, manual test pending`. Catat job ID dan hash tx di tabel hasil di bawah.
+Dijalankan sebagian pada 2026-11-01 (bukti di [bagian 11](#11-hasil-uji-manual-freighter-testnet-2026-11-01)): langkah 6, 8, 9 dan 10 terbukti lewat job #2 (agen milik akun B, bukan agen seed; deliver lewat Agent Dashboard). Sejak itu README menandai `create_job`, `complete_job`, `rate_agent` dan tanda tangan Freighter sebagai `✅ Real (manual test 2026-11-01)`. Refund klien (langkah 11–12) dan pemeriksaan jaringan/akun Freighter (langkah 3, 14) tetap `🟡 Implemented, manual test pending` sampai lulus. Catat job ID dan hash tx di tabel hasil di bawah.
 
 Persiapan:
 - Freighter terpasang, jaringan **Testnet**, akun didanai (Freighter → Fund with Friendbot, atau `https://friendbot.stellar.org/?addr=<G...>`). Akun Freighter harus berbeda dari semua identity agen.
@@ -226,11 +226,30 @@ Hasil (isi setelah uji):
 
 | Tanggal | Akun klien (publik) | Job A | Job B | Hash tx create/complete/rate/refund | Lulus |
 |---|---|---|---|---|---|
-| | | | | | |
+| 2026-11-01 | `GDKLUMZYAPICS7Z5GGYQZEM3JMNVN7Y3PKS3K6HAH6MN26LLVVIYVNNV` (A) | #2 (2 XLM, tenggat 3600 s, agen `Uji 3b` milik B) | belum dibuat | create `418eadd6…16db4e`, complete `9c94dc3e…cae5e4f`, rate `dfbc2ae4…669f84`, refund: belum (hash lengkap di bagian 11) | 6, 8, 9, 10 |
+
+Klasifikasi per langkah (2026-11-01). "Terbukti on-chain" berarti transaksinya sukses di Horizon dan state-nya dicek dengan `get_job`/`get_agent` (`--send=no`); bagian UI dari hasil yang diharapkan (pesan drawer, countdown, tombol) tidak ikut terbukti karena tidak ada tangkapan layar uji ini di repo.
+
+| # | Status | Bukti |
+|---|---|---|
+| 1 | Belum dijalankan (tanpa bukti) | — |
+| 2 | Belum dijalankan | — |
+| 3 | Belum dijalankan | — |
+| 4 | Belum dijalankan | — |
+| 5 | Belum dijalankan | Penolakan di Freighter tidak meninggalkan jejak on-chain; tidak ada tangkapan layar |
+| 6 | Lulus (terbukti on-chain) | `create_job(A, B, 20000000, 3600)` → job #2; `job_count` 1 → 2 |
+| 7 | Belum dijalankan (tanpa bukti) | — |
+| 8 | Lulus (terbukti on-chain), lewat Agent Dashboard bukan CLI | `deliver_job(2, c676…6558)` oleh B; `delivered_at` terisi |
+| 9 | Lulus (terbukti on-chain) | `complete_job(2)` oleh A; `get_job` → `"status": 2`; `total_jobs` agen B = 1 |
+| 10 | Lulus (terbukti on-chain) | `rate_agent(A, 2, 4)`; `get_job` → `"rated": true`; agen B `rating_count` 1, `rating_sum` 4 |
+| 11–12 | Belum dijalankan | Tidak ada job B dan tidak ada transaksi `refund_job` |
+| 13 | Belum dijalankan | — |
+| 14 | Belum dijalankan | — |
+| 15 | Belum dijalankan | — |
 
 ## 10. Checklist uji manual 3b (dashboard agen)
 
-Belum pernah dijalankan. Sampai langkah 1–13 dan 15–17 lulus, baris "Agent dashboard" dan "Result hash and client file check" di README tetap `🟡 Implemented, manual test pending`. Semua transaksi di bawah memakai pipeline yang sama dengan bagian 9 (`invoke` di `frontend/src/chain/rpc.js`). Agero tidak menjalankan agen: "hasil" di sini hanyalah file uji yang dibuat sendiri.
+Dijalankan sebagian pada 2026-11-01 (bukti di [bagian 11](#11-hasil-uji-manual-freighter-testnet-2026-11-01)): langkah 4, 6, 8, 9 dan 11 terbukti lewat agen `Uji 3b` dan job #2. Sejak itu README menandai `register_agent`, `update_agent` dan `deliver_job` dari dashboard sebagai `✅ Real (manual test 2026-11-01)`. `refund_job` oleh agen (langkah 12–13), `release_job` (langkah 14), cek file klien (langkah 10) dan sisanya tetap `🟡 Implemented, manual test pending` sampai lulus. Semua transaksi di bawah memakai pipeline yang sama dengan bagian 9 (`invoke` di `frontend/src/chain/rpc.js`). Agero tidak menjalankan agen: "hasil" di sini hanyalah file uji yang dibuat sendiri.
 
 Persiapan:
 - Dua akun di Freighter (Testnet, didanai): **A** = klien (boleh akun bagian 9), **B** = pemilik agen baru yang **belum** punya agen. Ganti akun di Freighter lalu Disconnect + Connect lagi di UI (UI menolak tanda tangan bila akun aktif berubah).
@@ -263,4 +282,60 @@ Hasil (isi setelah uji):
 
 | Tanggal | Akun agen B (publik) | Job C / D / E | Hash tx register/update/deliver/refund (agen) | Release (opsional) | Lulus |
 |---|---|---|---|---|---|
-| | | | | | |
+| 2026-11-01 | `GA2V6PMX5PQ3GFPJOUN5YXURZWNVD6N35BQSVGDN5FO2AARUMSWXAX37` (B) | C = #2 / D: belum / E: belum | register `db1eaa11…a56e1b`, update `192f3aeb…124203e`, deliver `8468f325…795c06`, refund: belum (hash lengkap di bagian 11) | belum | 4, 6, 8, 9, 11 |
+
+Klasifikasi per langkah (2026-11-01), dengan arti "terbukti on-chain" yang sama seperti di bagian 9:
+
+| # | Status | Bukti |
+|---|---|---|
+| 1 | Belum dijalankan (tanpa bukti) | — |
+| 2 | Belum dijalankan | — |
+| 3 | Belum dijalankan | Penolakan di Freighter tidak meninggalkan jejak on-chain; tidak ada tangkapan layar |
+| 4 | Lulus (terbukti on-chain) | `register_agent(B, "Uji 3b", "ete", "", 10000000)`; `agent_count` 12 → 13 |
+| 5 | Belum dijalankan | — |
+| 6 | Lulus (terbukti on-chain), hanya harga | `update_agent(B, "Uji 3b", "ete", "", 20000000)`: harga 1 → 2 XLM; deskripsi tidak diubah (tetap `ete`). Saat itu `total_jobs` dan rating masih 0 |
+| 7 | Belum dijalankan | — |
+| 8 | Lulus (terbukti on-chain), bagian create saja | Job C = #2, `create_job` oleh A, 2 XLM, tenggat 3600 s. Tampilan Incoming jobs tidak terbukti |
+| 9 | Lulus (terbukti on-chain), bagian deliver saja | `get_job --job_id 2` → `result_hash` `c676890ff6904a29d67c8708d1c55751dc97950a0333d9f881c5da45a7986558`, sama dengan hash yang dilaporkan Umem dari UI. Validasi 63 karakter dan pembandingan dengan `Get-FileHash` tidak terbukti |
+| 10 | Belum dijalankan (tanpa bukti) | Hasil "Match"/"No match" tidak tercatat |
+| 11 | Lulus (terbukti on-chain) | `complete_job(2)` oleh A; `total_jobs` agen B = 1; saldo B naik 2 XLM dikurangi fee miliknya (lihat bagian 11) |
+| 12–13 | Belum dijalankan | Tidak ada transaksi `refund_job` |
+| 14 | Belum dijalankan (opsional) | Tidak ada transaksi `release_job` |
+| 15–17 | Belum dijalankan | — |
+
+## 11. Hasil uji manual Freighter (Testnet, 2026-11-01)
+
+Dijalankan Umem di `http://localhost:5173` dengan dua akun Freighter di Testnet. Bukti dikumpulkan sesudahnya tanpa transaksi: riwayat akun A dan B dari Horizon Testnet (`/accounts/<G>/operations` dan `/transactions?include_failed=true`; nama fungsi dan argumen di-decode dari parameter `invoke_host_function`), lalu `get_job`, `get_agent`, `job_count`, `agent_count` dan saldo SAC kontrak lewat `stellar contract invoke ... --send=no`.
+
+| Item | Nilai |
+|---|---|
+| Kontrak | `CA5CMRJJHCJZIKVGFIOEV3BGVNTQVOI6KYV4S3GOROHUS7HLUUYLBDFB` |
+| Akun A (klien) | `GDKLUMZYAPICS7Z5GGYQZEM3JMNVN7Y3PKS3K6HAH6MN26LLVVIYVNNV` (dibuat friendbot 2026-07-04, 10000 XLM) |
+| Akun B (pemilik agen) | `GA2V6PMX5PQ3GFPJOUN5YXURZWNVD6N35BQSVGDN5FO2AARUMSWXAX37` (dibuat friendbot 2026-11-01, 10000 XLM) |
+| Agen | `Uji 3b`, deskripsi `ete`, `api_url` kosong, harga 2 XLM (`20000000`), `total_jobs` 1, `rating_count` 1, `rating_sum` 4. Bukan agen Sample |
+| Job | #2: klien A, agen B, `amount` `20000000`, `created_at` 1793534270, `deadline` 1793537870 (+3600 s), `delivered_at` 1793534470, `"status": 2` (Completed), `"rated": true`, `result_hash` `c676890ff6904a29d67c8708d1c55751dc97950a0333d9f881c5da45a7986558` |
+| Sesudahnya | `job_count` 2, `agent_count` 13, saldo kontrak di SAC `"0"` |
+| Transaksi gagal | Tidak ada (Horizon `include_failed=true` untuk A dan B) |
+
+Transaksi kontrak (semua `successful: true`, satu operasi `invoke_host_function` ke kontrak di atas):
+
+| Waktu (UTC) | Ledger | Penanda tangan | Fungsi | Argumen | Fee (stroop) | Hash tx |
+|---|---|---|---|---|---|---|
+| 11:51:35 | 5502051 | B | `register_agent` | `B, "Uji 3b", "ete", "", 10000000` | 463101 | `db1eaa11847a29270b800aa592c6f5928450d52c9094873ef5c6dffc85a56e1b` |
+| 11:53:15 | 5502071 | B | `update_agent` | `B, "Uji 3b", "ete", "", 20000000` | 4350 | `192f3aeb40ac8f0cda91069128ce46ee52b9caaed72bf2743f5dce371124203e` |
+| 11:57:50 | 5502126 | A | `create_job` | `A, B, 20000000, 3600` | 369846 | `418eadd6c4d851b92ae2e2e914f69fd2f2528df9d4fbb53536356bfeb516db4e` |
+| 12:01:10 | 5502166 | B | `deliver_job` | `2, c676890f…a7986558` | 40725 | `8468f3255fcc76fbd59810b6569c631efc53e3106c368a8effffd1e4fd795c06` |
+| 12:02:20 | 5502180 | A | `complete_job` | `2` | 9982 | `9c94dc3efd1defd8dd7d85f94097844df5bf24dac6f96a15d60e34694cae5e4f` |
+| 12:04:20 | 5502204 | A | `rate_agent` | `A, 2, 4` | 5891 | `dfbc2ae48c749c702bd781cf8477b0551038740a2ee845151802fa07bf669f84` |
+
+Saldo cocok persis dengan transaksi di atas: A = 10000 − 2 − 0.0385719 (fee) = `9997.9614281` XLM; B = 10000 + 2 − 0.0508176 (fee) = `10001.9491824` XLM.
+
+**Belum teruji** (tidak ada transaksi atau tangkapan layar yang membuktikannya):
+- `refund_job` oleh klien setelah tenggat (§9 langkah 11–12).
+- `refund_job` oleh agen, saat Pending dan saat Delivered (§10 langkah 12–13).
+- `release_job` setelah jendela review 72 jam (§10 langkah 14).
+- Validasi form hire dan form daftar/edit agen (§9 langkah 4, §10 langkah 2).
+- Reject di Freighter (§9 langkah 5, §10 langkah 3).
+- Tab basi / dua tab (§9 langkah 13, §10 langkah 5 dan 17).
+- Ganti akun aktif di Freighter (§9 langkah 14) dan jaringan salah (§9 langkah 3, §10 langkah 16).
+- RPC tidak valid (§9 langkah 2, §10 langkah 15), tombol Hire nonaktif untuk agen sendiri (§10 langkah 7), cek file klien "Match"/"No match" (§10 langkah 10), tampilan My Jobs/Incoming jobs dan countdown (§9 langkah 1 dan 7), konsol "Test API (sim)" (§9 langkah 15).
