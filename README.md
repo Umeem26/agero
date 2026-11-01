@@ -69,11 +69,12 @@ What actually works today (based on the [2026-10-25 audit](docs/audit/agero-audi
 | Ratings | ✅ Real (read) / 🟡 write pending | Stars and counts come from the contract (one 1–5 rating per Completed job, by that job's client). Text reviews were removed: the contract stores only numbers |
 | Agent dashboard (`register_agent`, `update_agent`, `deliver_job`, `release_job`, `refund_job` as the agent) | 🟡 Implemented, manual test pending | Phase 3b. Same build → simulate → assemble → Freighter → send → poll pipeline as above. Actions shown only when the contract would accept them (status + ledger time; release at `delivered_at + 72 h`), unit-tested including the exact 72 h boundary. Incoming jobs and the earnings summary come from scanning the newest 200 jobs. Checklist: [docs/deploy.md §10](docs/deploy.md#10-checklist-uji-manual-3b-dashboard-agen). The stellar CLI still works as an alternative |
 | Result hash and client file check | 🟡 Implemented, manual test pending | SHA-256 computed in the browser (Web Crypto, tested with NIST vectors) from a file or text; only the 32-byte hash goes into `deliver_job`. My Jobs shows `result_hash` and compares a file the client received against it, locally. A match says nothing about quality |
-| Agent work output | ⛔ Outside Agero (by design) | Agero never runs agents or stores results; owners do the work elsewhere and send it to the client themselves. Sample agents perform no work; their images are static |
+| Agent work output | ⛔ Outside Agero (by design) | Agero never runs agents or stores results; owners do the work elsewhere and send it to the client themselves. Sample agents perform no work |
 | x402 payment verification | 🟡 Simulated | The playground sends the mock reference `MOCK_TX_XLM` to the local gateway demo (`scripts/x402_simulator.js`) or simulates in the browser. Not linked to the escrow |
 | Dispute resolution | ⛔ None (by design) | v2 has no arbiter: after delivery the client has 72 h to approve, then anyone can release funds to the agent |
 | Escrow token restriction | 🟡 v2 contract only | v2 fixes the token to native XLM at deploy time (the Testnet v2 uses the native XLM SAC); v1 accepts any token |
-| Interactive 3D canvas | ✅ Real | HTML5 Canvas |
+| Home "Contract pulse" | ✅ Real (read) | `agent_count`, `job_count` and the latest ledger number, read once when the home page loads; loading and error states shown |
+| Home "Escrow timeline" | 🟡 Illustration | Labelled "Illustration, not a real job": fixed example values stepped by the user; nothing is read from or sent to the chain |
 
 ### 🔑 Contract Address (Testnet)
 
@@ -97,43 +98,29 @@ CBEIINKJWTVYY3WNJGWFWJECNLZHT2RA3YXATDLTGKZGFN5ZOMDRBW5X
 
 ## 🖼️ Screenshots
 
-> These screenshots were taken before phase 3a, when every transaction in the UI was simulated. They show the old Demo mode, sample reviews and the simulated escrow drawer, which are gone from the current UI.
+Captured on 2026-11-01 from the phase 4c build (`vite preview`, Chromium, live Testnet reads, no wallet connected). More widths in [docs/audit/ui-shots/after-4c/](docs/audit/ui-shots/after-4c/).
 
-### Homepage — Interactive 3D Holographic AI Core
-The landing page features a cursor-responsive 3D wireframe robot rendered on HTML5 Canvas, with orbiting particles and holographic scanlines.
+### Home
+The hero is an interactive illustration of one escrow job (labelled as such): the XLM moves Client → Escrow → Agent, the deadline meter counts down and the result hash is sealed on delivery. Below it, the "Contract pulse" shows numbers read from the contract when the page loads, and a state diagram of every status change.
 
 <p align="center">
-  <img src="docs/screenshots/01_homepage_hero.png" width="90%" alt="Homepage Hero" />
+  <img src="docs/audit/ui-shots/after-4c/home-1440.jpg" width="90%" alt="Home page at 1440 px: escrow timeline illustration, contract pulse, registered agents, state diagram" />
 </p>
 
-### AI Agent Marketplace
-Browse AI agents by category. Since phase 3a the listings, prices, ratings and job counts are read from contract v2; images and categories are UI-only sample extras.
+### Marketplace and agent detail
+Listings, prices, ratings and job counts are read from contract v2 and marked "on contract"; the category (dashed) exists only in the frontend. Each agent has a glyph derived from its owner address. "Sample" marks the seeded agents.
 
 <p align="center">
-  <img src="docs/screenshots/02_marketplace.png" width="90%" alt="Marketplace" />
+  <img src="docs/audit/ui-shots/after-4c/marketplace-1440.jpg" width="45%" alt="Marketplace at 1440 px" />
+  <img src="docs/audit/ui-shots/after-4c/agent-detail-1440.jpg" width="45%" alt="Agent detail at 1440 px" />
 </p>
 
-### Agent Detail & Hire Flow
-Agent detail and the hire form. The screenshot shows the old simulated drawer; the current UI signs `create_job` in Freighter.
+### Agent dashboard (no wallet connected) and mobile
+The former Developer page is now the collapsible "Use the CLI instead" section of the Agent dashboard. Screens that need a connected wallet (My Jobs with jobs, Deliver, Verify, Rate) are not captured here.
 
 <p align="center">
-  <img src="docs/screenshots/03_agent_detail.png" width="45%" alt="Agent Detail" />
-  <img src="docs/screenshots/04_escrow_modal.png" width="45%" alt="Escrow Modal" />
-</p>
-
-### How Agero Works — Connected M2M Timeline
-A visual step-by-step workflow of the escrow lifecycle from wallet connection to fund release.
-
-<p align="center">
-  <img src="docs/screenshots/06_how_it_works.png" width="90%" alt="How It Works" />
-</p>
-
-### Wallet Integration & Developer Portal
-Old wallet dropdown (Demo mode has since been removed; Freighter on Testnet only) and the old simulated registration form (registration now happens in the Agent dashboard, signed in Freighter).
-
-<p align="center">
-  <img src="docs/screenshots/05_wallet_connect.png" width="45%" alt="Wallet Connect" />
-  <img src="docs/screenshots/07_developer_portal.png" width="45%" alt="Developer Portal" />
+  <img src="docs/audit/ui-shots/after-4c/agent-dashboard-disconnected-1440.jpg" width="60%" alt="Agent dashboard without a wallet at 1440 px" />
+  <img src="docs/audit/ui-shots/after-4c/marketplace-375.jpg" width="25%" alt="Marketplace at 375 px" />
 </p>
 
 ---
@@ -144,10 +131,10 @@ Old wallet dropdown (Demo mode has since been removed; Freighter on Testnet only
 ┌───────────────────────────────────────────────────────────────┐
 │                  Agero Frontend (React 19 + Vite 8)           │
 │                                                               │
-│  ┌──────────┐ ┌─────────────┐ ┌──────────┐ ┌───────┐ ┌─────┐  │
-│  │ Homepage │ │ Marketplace │ │ My Jobs  │ │ Agent │ │ Dev │  │
-│  │ (3D)     │ │ (registry)  │ │ (client) │ │ dash. │ │ CLI │  │
-│  └──────────┘ └─────────────┘ └──────────┘ └───────┘ └─────┘  │
+│  ┌──────────┐ ┌─────────────┐ ┌──────────┐ ┌─────────────┐    │
+│  │ Home     │ │ Marketplace │ │ My Jobs  │ │ Agent dash. │    │
+│  │ (pulse)  │ │ (registry)  │ │ (client) │ │ (+ CLI)     │    │
+│  └──────────┘ └─────────────┘ └──────────┘ └─────────────┘    │
 │                                                               │
 │  src/chain: @stellar/stellar-sdk 17 + Freighter (Testnet)     │
 │  x402 playground: simulated, not linked to the escrow         │
@@ -189,9 +176,9 @@ Old wallet dropdown (Demo mode has since been removed; Freighter on Testnet only
 | **AI Agent Marketplace** (registry from contract v2) | Lists every agent registered on the contract. `scripts/seed-agents.ps1` registers 11 sample agents (Summarizer Bot, Image Generator Pro, Translation Bot XL, Code Auditor AI, Data Analyst Bot, Voice Cloner AI, Music Composer AI, SEO Optimizer Bot, Chatbot Assistant, Sentiment Analyst, Video Generator AI), marked "Sample", with placeholder endpoints |
 | **Soroban Escrow** (v2 on Testnet) | v2 locks native XLM in `create_job` with a client-chosen deadline. The agent delivers a result hash; the client approves with `complete_job`, or after 72 h anyone can `release_job` to the agent. The client can refund only after the deadline if nothing was delivered; the agent can refund any time before payout. No arbiter. The UI signs `create_job`, `complete_job`, `refund_job` and `rate_agent` for the client and `register_agent`, `update_agent`, `deliver_job`, `release_job`, `refund_job` for the agent, all in Freighter (manual test pending) |
 | **x402 Payment Protocol** (simulated) | A mock payment reference is passed over HTTP to a local gateway demo, or simulated in the browser; not linked to the escrow |
-| **Interactive 3D Core** | Cursor-responsive holographic wireframe AI robot on HTML5 Canvas |
+| **Escrow timeline** (illustration) | Home-page hero that steps through one example job (Pending → Delivered → 72 h review → Completed, or Refunded) with Play / Next step / Reset; static and complete under reduced motion |
 | **Freighter Integration** (Testnet) | Connect Freighter, check that it is on Testnet, and sign contract calls. Rejections, wrong network, low balance and failed transactions show a clear message |
-| **Liquid Glass UI** | Premium dark glassmorphic design with digital blueprint grid background |
+| **Forest ledger UI** | Flat dark forest surfaces, one teal accent, hash chips and deadline meters; see [docs/design-system.md](docs/design-system.md) |
 | **Rating System** (contract v2) | One 1–5 star rating per Completed job, signed by that job's client with `rate_agent`. The UI shows the on-chain average and count; there are no text reviews |
 
 ---
@@ -270,14 +257,14 @@ agero/
 │       │   └── test/            # flow, auth, validation, events, audit regressions
 │       └── Cargo.toml
 ├── frontend/
-│   ├── public/                  # Agent sample images & favicon
+│   ├── public/                  # favicon
 │   ├── .env.example             # VITE_* chain config (Testnet defaults)
 │   ├── src/
-│   │   ├── App.jsx              # Pages: home, marketplace, agent detail, my jobs, agent dashboard, developer
+│   │   ├── App.jsx              # Pages: home, marketplace, agent detail, my jobs, agent dashboard (incl. CLI)
 │   │   ├── chain/               # config, rpc (reads/writes), wallet (Freighter), jobs, profile, hash (SHA-256), units, errors + tests
 │   │   ├── components/          # HireModal, MyJobs, AgentDashboard, AgentProfileForm, TxProgress, Playground (simulated x402), ui
-│   │   ├── data/sample-agents.json  # Sample agents for the seed script + UI-only images/categories
-│   │   └── index.css            # Dark liquid glass theme system
+│   │   ├── data/sample-agents.json  # Sample agents for the seed script + UI-only categories
+│   │   └── index.css            # Role tokens + styles (docs/design-system.md)
 │   └── index.html
 ├── scripts/
 │   ├── x402_simulator.js       # Local x402 payment gateway simulator
@@ -287,8 +274,8 @@ agero/
 ├── docs/
 │   ├── contract-v2.md           # State machine, events, errors, audit → test map
 │   ├── deploy.md                # Testnet deploy, seed, frontend config, manual UI checklist
-│   ├── audit/                   # Audit report + phase screenshots
-│   ├── screenshots/             # App screenshots for README
+│   ├── audit/                   # Audit reports + phase screenshots (README uses ui-shots/after-4c)
+│   ├── design-system.md         # Tokens, fonts, usage rules
 │   └── *.md                     # Implementation plans
 ├── tool/
 │   └── honesty_gate.sh          # Fails if banned overclaiming phrases appear
@@ -356,21 +343,7 @@ The deprecated v1 contract (`CBEIINKJ…BW5X`) has a different API (`token` para
 
 ## 🎨 Design System
 
-### Color Palette
-
-| Color | Hex | Usage |
-|---|---|---|
-| Deep Forest | `#2C3531` | Card backgrounds, glass surfaces |
-| Teal | `#116466` | Primary accent, borders, glows |
-| Sand Clay | `#D9B08C` | Secondary highlights |
-| Peach Warm | `#FFCB9A` | Active states, CTAs, eye glow |
-| Mint Ice | `#D1E8E2` | Body text, high readability |
-
-### Design Features
-- **Liquid Glass Morphism** — `backdrop-filter: blur(20px)` with radial gradient hover effects
-- **Digital Blueprint Grid** — 45px coordinate grid with ambient scanner pulse
-- **3D Canvas Rendering** — Perspective-projected wireframe with depth-aware coloring
-- **Micro-animations** — Smooth transitions on all interactive elements
+"Forest ledger": flat dark forest surfaces (depth by lightness + 1 px borders, no glass or shadows), mint text, teal `#116466` as the only accent, peach `#FFCB9A` reserved for Sample/Simulated labels, sand `#D9B08C` for pending states and deadlines. Display font IBM Plex Sans Condensed, body Inter, system mono for hashes. Signature components: the hash chip (64 hex in a 4 × 16 block) and the deadline meter. Every text token pair is ≥ 4.5:1. Full rules: [docs/design-system.md](docs/design-system.md).
 
 ---
 
@@ -380,9 +353,8 @@ The deprecated v1 contract (`CBEIINKJ…BW5X`) has a different API (`token` para
 |---|---|
 | **Smart Contracts** | Rust + Soroban SDK |
 | **Frontend** | React 19 + Vite 8 |
-| **Styling** | Vanilla CSS (Liquid Glass) |
+| **Styling** | Vanilla CSS with role tokens |
 | **Icons** | Lucide React |
-| **3D Graphics** | HTML5 Canvas API |
 | **Blockchain** | Stellar Testnet + Horizon |
 | **Wallet** | Freighter Browser Extension (`@stellar/freighter-api` 6.0.1, signs Soroban transactions) |
 | **Stellar SDK** | `@stellar/stellar-sdk` 17.4 (Soroban RPC: simulate, assemble, send, poll) |

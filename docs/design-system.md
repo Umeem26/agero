@@ -37,7 +37,7 @@ Aturan:
 - **Satu aksen.** Teal untuk aksi dan tautan. Komposisi kira-kira 60 % permukaan forest, 30 % teks
   mint, 10 % teal.
 - **Peach berarti "bukan nyata".** Hanya badge Sample, catatan Sample, tombol `[sim]`, log `[sim]`,
- . Tidak boleh dipakai untuk penekanan atau dekorasi.
+ . Juga label "Illustration" di hero. Tidak boleh dipakai untuk penekanan atau dekorasi.
 - **Garis putus-putus = bukan dari kontrak.** Badge kategori (metadata UI-only), filter kategori,
   tombol simulasi dan catatan Sample memakai border dashed; data kontrak memakai garis solid.
 - Sand untuk semua yang sedang menunggu waktu (badge Pending, meter, bintang). Bintang memakai satu
@@ -86,10 +86,22 @@ Judul tegak, tanpa eyebrow kapital, tanpa gradien.
 
 - **HashChip** (`components/HashChip.jsx`): hash 64-hex dalam blok mono 4 × 16 karakter, dikelompokkan
   per 4, dengan tombol salin. Varian `sealed` (border teal + ikon gembok) untuk hash yang sudah
-  tercatat di kontrak. Dipakai di Deliver, Verify dan kartu job.
+  tercatat di kontrak. Dipakai di Deliver, Verify, kartu job dan hero.
 - **DeadlineMeter** (`components/DeadlineMeter.jsx`): bar tipis satu warna (sand) + teks sisa waktu
   ("31 h 12 m left") dari waktu ledger. Teks membawa informasinya; bar `aria-hidden`. Dipakai di
-  kartu job (tenggat saat Pending, masa tinjau 72 jam saat Delivered), dan ringkasan Hire.
+  kartu job (tenggat saat Pending, masa tinjau 72 jam saat Delivered), ringkasan Hire dan hero.
+- **Escrow timeline** (`components/EscrowTimeline.jsx`): hero Home. Satu job contoh berlabel
+  "Illustration, not a real job" (peach dashed) yang dijalankan pengguna: Play / Next step / Reset,
+  pilihan hasil Approved atau Refunded. XLM berpindah Client → Escrow → Agent dengan `transform`
+  300 ms; HashChip muncul tersegel saat Delivered; DeadlineMeter bergerak. Saat reduced motion:
+  tanpa autoplay, mulai dari langkah terakhir, semua langkah bisa dipilih.
+- **AddressGlyph** (`components/AddressGlyph.jsx`, `glyph.js`): pola 5 × 5 simetris yang diturunkan
+  deterministik dari alamat pemilik (FNV-1a + xorshift), dua warna teal di atas forest. Pemilik yang
+  sama selalu punya glyph yang sama (kartu, detail, dashboard). Pengganti gambar agen.
+- **Contract pulse** (`components/ContractPulse.jsx`): `agent_count`, `job_count`, ledger terakhir
+  dan alamat kontrak, dibaca sekali saat halaman dimuat ("Read from Stellar Testnet on page load").
+- **StatusFlow** (`components/StatusFlow.jsx`): diagram status SVG hairline dengan satu aksen pada
+  jalur auto-release 72 jam, plus tabel transisi sebagai padanan teksnya.
 - **StatCard, KeyValueList, EmptyState, ConnectPrompt, AgentCard, JobCard** di `components/`.
 - **Penanda sumber data:** `ContractMark` ("on contract", mono teal) untuk nilai yang dibaca dari
   kontrak; badge kategori dashed dan redup untuk metadata yang hanya ada di frontend.

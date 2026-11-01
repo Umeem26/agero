@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, Clock, Info, RefreshCw } from 'lucide-react';
+import { AlertCircle, ChevronDown, Clock, Info, RefreshCw, Terminal } from 'lucide-react';
 import { MAX_JOB_SCAN, deliverJob, fetchAgent, fetchAgentJobs, refundJob, releaseJob } from '../chain/rpc';
 import { friendlyError } from '../chain/errors';
 import { HOUR_SECS, JobStatus, REVIEW_WINDOW_SECS, agentActions, agentEarnings, reviewEndsAt } from '../chain/jobs';
@@ -10,6 +10,7 @@ import { shortAddress } from '../agents';
 import { ConnectPrompt, EmptyState, ErrorState, ExplorerLink, KeyValueList, StatCard } from './ui';
 import { HashSource, JobCard, JobListSkeleton } from './jobUi';
 import { toDate, useLedgerNow } from './ledgerTime';
+import AddressGlyph from './AddressGlyph';
 import AgentProfileForm from './AgentProfileForm';
 import Modal from './Modal';
 
@@ -24,6 +25,26 @@ function OffAppNotice() {
         The contract records only a SHA-256 hash of the result when you deliver, plus the escrow payment. Nothing else about the work is checked.
       </span>
     </div>
+  );
+}
+
+// The stellar CLI does everything the dashboard does (formerly the Developer page)
+function CliSection() {
+  return (
+    <details className="card cli">
+      <summary className="cli-summary"><Terminal size={16} aria-hidden="true" /> Use the CLI instead <ChevronDown size={16} aria-hidden="true" className="cli-chevron" /></summary>
+      <div className="cli-body">
+        <p className="form-hint">The stellar CLI calls the same contract functions as this dashboard. Price is in stroops (1 XLM = 10,000,000). One agent per address.</p>
+        <pre className="cli-box">{`stellar contract invoke --id ${CONFIG.contractId} \\
+  --source-account <identity> --network testnet -- \\
+  register_agent --owner <G...> --name "<name>" \\
+  --description "<description>" --api_url "<url>" --price <stroops>`}</pre>
+        <p className="form-hint">Deliver a job (result_hash = 64 hex characters, e.g. from <code>sha256sum result.zip</code>; the dashboard computes the same hash):</p>
+        <pre className="cli-box">{`stellar contract invoke --id ${CONFIG.contractId} \\
+  --source-account <identity> --network testnet -- \\
+  deliver_job --job_id <id> --result_hash <hex64>`}</pre>
+      </div>
+    </details>
   );
 }
 
@@ -136,11 +157,12 @@ export default function AgentDashboard({ wallet, runTx, onConnect, onChanged, on
       <>
         <OffAppNotice />
         <ConnectPrompt onConnect={onConnect}>Connect Freighter (Testnet) with the wallet that owns, or will own, your agent.</ConnectPrompt>
+        <CliSection />
       </>
     );
   }
 
-  if (state.status === 'error') return <><OffAppNotice /><ErrorState message={state.error} onRetry={load} /></>;
+  if (state.status === 'error') return <><OffAppNotice /><ErrorState message={state.error} onRetry={load} /><CliSection /></>;
   if (state.status !== 'ready' && !state.agent) return <><OffAppNotice /><JobListSkeleton /></>;
 
   const { agent } = state;
@@ -153,7 +175,7 @@ export default function AgentDashboard({ wallet, runTx, onConnect, onChanged, on
       <OffAppNotice />
 
       <section className="card card-pad section-gap">
-        <h2 className="card-heading">{can.register ? 'Register your agent' : 'Your agent'}</h2>
+        <h2 className="card-heading card-heading-glyph"><AddressGlyph address={wallet} size={32} />{can.register ? 'Register your agent' : 'Your agent'}</h2>
         {can.register && (
           <>
             <p className="card-lead">No agent is registered for {shortAddress(wallet)} on contract <ExplorerLink href={explorerContractUrl()}>{shortAddress(CONFIG.contractId)}</ExplorerLink>. Registering lists it in the marketplace.</p>
@@ -227,6 +249,8 @@ export default function AgentDashboard({ wallet, runTx, onConnect, onChanged, on
           )}
         </>
       )}
+
+      <CliSection />
 
       {deliverFor && <DeliverModal job={deliverFor} now={now} onSubmit={handleDeliver} onClose={() => setDeliverFor(null)} />}
       {refundFor && <RefundConfirm job={refundFor} onConfirm={handleRefund} onClose={() => setRefundFor(null)} />}

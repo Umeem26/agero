@@ -29,6 +29,11 @@ BANNED_PHRASES=(
   "real-time"
   "instantly"
   "Ultra-fast"
+  # Phase 4c: the home page reads the contract once on load; no decorative "AI" visuals
+  "Read live"
+  "live from the"
+  "Holographic"
+  "Liquid Glass"
 )
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

@@ -104,6 +104,17 @@ export async function fetchLedgerTime() {
   return BigInt(String(res.latestLedgerCloseTime));
 }
 
+// Home page "contract pulse": agent_count, job_count and the newest ledger, read once (no signing)
+export async function fetchPulse() {
+  const [agents, jobs, res] = await Promise.all([viewAgero('agent_count'), viewAgero('job_count'), chain().server.getTransaction(NO_SUCH_TX)]);
+  return {
+    agentCount: Number(agents),
+    jobCount: BigInt(jobs),
+    ledger: Number(res.latestLedger),
+    ledgerCloseTime: BigInt(String(res.latestLedgerCloseTime)),
+  };
+}
+
 // Scan the newest MAX_JOB_SCAN jobs (newest first) and keep those matching `keep`
 async function scanJobs(keep) {
   const [count, ledgerTime] = await Promise.all([viewAgero('job_count'), fetchLedgerTime()]);

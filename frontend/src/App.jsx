@@ -7,10 +7,13 @@ import { friendlyError } from './chain/errors';
 import { REVIEW_WINDOW_SECS, HOUR_SECS } from './chain/jobs';
 import { stroopsToXlm } from './chain/units';
 import { presentAgent, shortAddress } from './agents';
-import { Robot3D } from './components/Robot3D';
 import AgeroLogo from './components/AgeroLogo';
-import { Stars, SampleBadge, ContractMark, ExplorerLink, EmptyState, ErrorState, KeyValueList, SkeletonCards, StatCard } from './components/ui';
+import { Stars, SampleBadge, ContractMark, ExplorerLink, EmptyState, ErrorState, SkeletonCards, StatCard } from './components/ui';
 import AgentCard from './components/AgentCard';
+import AddressGlyph from './components/AddressGlyph';
+import ContractPulse from './components/ContractPulse';
+import EscrowTimeline from './components/EscrowTimeline';
+import StatusFlow from './components/StatusFlow';
 import HireModal from './components/HireModal';
 import MyJobs from './components/MyJobs';
 import AgentDashboard from './components/AgentDashboard';
@@ -22,8 +25,9 @@ const PAGES = [
   { id: 'marketplace', label: 'Marketplace' },
   { id: 'jobs', label: 'My Jobs' },
   { id: 'agent', label: 'Agent Dashboard' },
-  { id: 'developer', label: 'Developer' },
 ];
+// The Developer page was merged into the Agent dashboard (phase 4c)
+const PAGE_ALIASES = { developer: 'agent' };
 const REVIEW_HOURS = REVIEW_WINDOW_SECS / HOUR_SECS;
 
 // Loading / error / empty states for anything that lists registry agents
@@ -89,7 +93,6 @@ export default function App() {
   const categories = useMemo(() => ['All', ...new Set(registry.agents.map((a) => a.category))], [registry.agents]);
   const filtered = selectedCategory === 'All' ? registry.agents : registry.agents.filter((a) => a.category === selectedCategory);
   const featured = registry.agents.slice(0, 3);
-  const ownAgent = wallet ? agentsByOwner.get(wallet) : null;
   // Keep the last numbers on screen while refreshing
   const hasRegistry = registry.status === 'ready' || registry.status === 'refreshing';
 
@@ -99,7 +102,7 @@ export default function App() {
     if (type !== 'error') setTimeout(() => setNotification((n) => (n?.message === message ? null : n)), 3500);
   };
 
-  const go = (page) => { setActivePage(page); setDetailOwner(null); setMenuOpen(false); };
+  const go = (page) => { setActivePage(PAGE_ALIASES[page] ?? page); setDetailOwner(null); setMenuOpen(false); };
   const openAgent = (owner) => { setDetailOwner(owner); window.scrollTo(0, 0); };
 
   const handleConnect = async () => {
@@ -233,14 +236,19 @@ export default function App() {
               ) : (
                 <div className="detail-layout">
                   <section className="card card-pad detail-main">
-                    <div className="detail-meta">
-                      {detailAgent.isSample && <SampleBadge />}
-                      <span className="src-ui" title="Category is set in this frontend; the contract does not store it">{detailAgent.category}</span>
+                    <div className="detail-title">
+                      <AddressGlyph address={detailAgent.owner} size={56} />
+                      <div>
+                        <h1 className="detail-name">{detailAgent.name}</h1>
+                        <div className="detail-meta">
+                          {detailAgent.isSample && <SampleBadge />}
+                          <span className="src-ui" title="Category is set in this frontend; the contract does not store it">{detailAgent.category}</span>
+                        </div>
+                      </div>
                     </div>
-                    <h1 className="detail-name">{detailAgent.name}</h1>
                     <p className="detail-desc">{detailAgent.summary}</p>
                     {detailAgent.isSample && (
-                      <p className="sample-note">Sample agent registered by the project's seed script. Its endpoint is a placeholder with no live service, the image is a static sample, and no AI work is performed. The description is illustrative text kept in this frontend; the contract still stores the original seed text. Price, rating and job count are read from the contract.</p>
+                      <p className="sample-note">Sample agent registered by the project's seed script. Its endpoint is a placeholder with no service behind it, and no AI work is performed. The description is illustrative text kept in this frontend; the contract still stores the original seed text. Price, rating and job count are read from the contract.</p>
                     )}
 
                     <div className="stat-row stat-row-4">
@@ -252,13 +260,6 @@ export default function App() {
 
                     <div className="field-caption">API endpoint (stored in the contract; not called by this UI)</div>
                     <div className="mono-box">{detailAgent.apiUrl}</div>
-
-                    {detailAgent.image && (
-                      <figure className="detail-figure">
-                        <figcaption className="field-caption">Sample image (static, not agent output)</figcaption>
-                        <img src={detailAgent.image} alt={`${detailAgent.name} static sample image`} width={768} height={768} decoding="async" />
-                      </figure>
-                    )}
 
                     <div className="detail-footer">
                       <span className="detail-owner">Owner: <ExplorerLink href={explorerAccountUrl(detailAgent.owner)}>{detailAgent.owner}</ExplorerLink></span>
@@ -291,18 +292,18 @@ export default function App() {
                     <div className="hero-content">
                       <h1 className="hero-title">Escrow for agent jobs on Stellar Testnet</h1>
                       <p className="hero-desc">
-                        Browse agents registered in a Soroban contract on Stellar Testnet. Lock Testnet XLM in escrow with a deadline you choose,
-                        approve the payment after delivery, or refund it if nothing is delivered in time. Agero does not run the agents: their owners do the work outside the app and record only a hash of each result.
+                        Lock Testnet XLM in a Soroban contract with a deadline you choose. The agent records a SHA-256 of the result; you approve within {REVIEW_HOURS} h or the payment can be released.
+                        Nothing delivered in time? You refund. Agero does not run the agents: their owners do the work outside the app.
                       </p>
                       <div className="btn-row">
                         <button className="btn btn-primary btn-lg" onClick={() => go('marketplace')}>Explore marketplace</button>
                         <button className="btn btn-outline btn-lg" onClick={() => go('jobs')}>My Jobs</button>
                       </div>
                     </div>
-                    <div className="hero-graphic">
-                      <Robot3D />
-                    </div>
+                    <EscrowTimeline />
                   </section>
+
+                  <ContractPulse />
 
                   <section className="home-section">
                     <h2 className="section-title">Registered agents</h2>
@@ -315,21 +316,9 @@ export default function App() {
                   </section>
 
                   <section className="home-section">
-                    <h2 className="section-title">How Agero works</h2>
-                    <p className="section-desc">Steps 1, 2 and 4 and the delivery record in step 3 are contract calls on Testnet. The work itself happens outside Agero; the sample agents perform no work at all.</p>
-                    <ol className="steps">
-                      {[
-                        ['Connect Freighter', 'Connect a Freighter wallet set to Stellar Testnet.'],
-                        ['Lock escrow', 'create_job moves your XLM into the contract with a deadline between 1 hour and 30 days.'],
-                        ['Agent delivers', 'The agent owner does the work outside Agero, sends the result to the client, and records its SHA-256 hash with deliver_job from the Agent dashboard.'],
-                        ['Approve or refund', `complete_job pays the agent. With no delivery by the deadline you can refund. ${REVIEW_HOURS} h after delivery anyone can release the payment.`],
-                      ].map(([title, desc]) => (
-                        <li key={title} className="card card-pad step">
-                          <h3 className="step-title">{title}</h3>
-                          <p className="step-desc">{desc}</p>
-                        </li>
-                      ))}
-                    </ol>
+                    <h2 className="section-title">How it works</h2>
+                    <p className="section-desc">Every status change is a contract call on Stellar Testnet. The work itself happens outside Agero; the sample agents perform no work at all.</p>
+                    <StatusFlow />
                   </section>
                 </div>
               )}
@@ -391,52 +380,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* ═══ DEVELOPER ═══ */}
-              {activePage === 'developer' && (
-                <div className="page-view">
-                  <header className="section-header">
-                    <h1 className="page-title">Developer Portal</h1>
-                    <p className="section-desc">Register your agent, deliver results and release payments from the Agent dashboard (signed in Freighter). The stellar CLI commands below do the same and remain available as an alternative.</p>
-                  </header>
-
-                  <div className="dev-layout">
-                    <section className="card card-pad">
-                      <h2 className="card-heading">Your agent</h2>
-                      {!wallet ? (
-                        <p className="card-lead">Connect Freighter in the Agent dashboard to register an agent or look up the one for your address.</p>
-                      ) : registry.status === 'error' ? (
-                        <ErrorState message={registry.error} onRetry={loadRegistry} />
-                      ) : registry.status === 'loading' ? (
-                        <div className="skeleton" />
-                      ) : ownAgent ? (
-                        <KeyValueList items={[
-                          ['Name', ownAgent.name],
-                          ['Price', `${stroopsToXlm(ownAgent.price)} XLM`],
-                          ['Completed jobs', ownAgent.totalJobs],
-                          ['Rating', ownAgent.ratingCount > 0 ? `${ownAgent.averageRating.toFixed(1)} (${ownAgent.ratingCount})` : 'none yet'],
-                        ]} />
-                      ) : (
-                        <p className="card-lead">No agent is registered for {shortAddress(wallet)} on this contract.</p>
-                      )}
-                      <button className="btn btn-primary" onClick={() => go('agent')}>Open Agent dashboard</button>
-                      <p className="form-hint">Agero does not host or run agents. The dashboard records your profile and, per job, a SHA-256 hash of the result you send to the client yourself.</p>
-                    </section>
-
-                    <section className="card card-pad">
-                      <h2 className="card-heading">Alternative: the stellar CLI</h2>
-                      <p className="form-hint">Price is in stroops (1 XLM = 10,000,000). One agent per address.</p>
-                      <pre className="cli-box">{`stellar contract invoke --id ${CONFIG.contractId} \\
-  --source-account <identity> --network testnet -- \\
-  register_agent --owner <G...> --name "<name>" \\
-  --description "<description>" --api_url "<url>" --price <stroops>`}</pre>
-                      <p className="form-hint">Deliver a job (result_hash = 64 hex characters, e.g. from <code>sha256sum result.zip</code>; the dashboard computes the same hash):</p>
-                      <pre className="cli-box">{`stellar contract invoke --id ${CONFIG.contractId} \\
-  --source-account <identity> --network testnet -- \\
-  deliver_job --job_id <id> --result_hash <hex64>`}</pre>
-                    </section>
-                  </div>
-                </div>
-              )}
             </>
           )}
         </main>

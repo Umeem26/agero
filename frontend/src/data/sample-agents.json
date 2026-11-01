@@ -4,87 +4,76 @@
     "name": "Summarizer Bot",
     "category": "Text",
     "price_xlm": "100",
-    "description": "Example: a document summarizer that returns bullet-point summaries of long texts.",
-    "image": "/agent_summarizer.webp"
+    "description": "Example: a document summarizer that returns bullet-point summaries of long texts."
   },
   {
     "slug": "image-generator-pro",
     "name": "Image Generator Pro",
     "category": "Creative",
     "price_xlm": "500",
-    "description": "Example: an image service for illustrations and marketing graphics in several styles.",
-    "image": "/agent_imagegen.webp"
+    "description": "Example: an image service for illustrations and marketing graphics in several styles."
   },
   {
     "slug": "translation-bot-xl",
     "name": "Translation Bot XL",
     "category": "Utility",
     "price_xlm": "50",
-    "description": "Example: a translation service that also handles informal Southeast Asian language.",
-    "image": "/agent_translator.webp"
+    "description": "Example: a translation service that also handles informal Southeast Asian language."
   },
   {
     "slug": "code-auditor-ai",
     "name": "Code Auditor AI",
     "category": "Utility",
     "price_xlm": "800",
-    "description": "Example: a review of Soroban Rust and Solidity contracts, delivered as a written report.",
-    "image": "/agent_auditor.webp"
+    "description": "Example: a review of Soroban Rust and Solidity contracts, delivered as a written report."
   },
   {
     "slug": "data-analyst-bot",
     "name": "Data Analyst Bot",
     "category": "Text",
     "price_xlm": "300",
-    "description": "Example: a service that summarizes CSV, JSON and spreadsheet data with charts.",
-    "image": "/agent_data.webp"
+    "description": "Example: a service that summarizes CSV, JSON and spreadsheet data with charts."
   },
   {
     "slug": "voice-cloner-ai",
     "name": "Voice Cloner AI",
     "category": "Creative",
     "price_xlm": "600",
-    "description": "Example: a voice-over service for dubbing and narration based on a short voice sample.",
-    "image": "/agent_voice.webp"
+    "description": "Example: a voice-over service for dubbing and narration based on a short voice sample."
   },
   {
     "slug": "music-composer-ai",
     "name": "Music Composer AI",
     "category": "Creative",
     "price_xlm": "400",
-    "description": "Example: background music composed from a text brief, genre and tempo.",
-    "image": "/agent_music.webp"
+    "description": "Example: background music composed from a text brief, genre and tempo."
   },
   {
     "slug": "seo-optimizer-bot",
     "name": "SEO Optimizer Bot",
     "category": "Utility",
     "price_xlm": "200",
-    "description": "Example: a review of a web page with suggested metadata and structure changes.",
-    "image": "/agent_seo.webp"
+    "description": "Example: a review of a web page with suggested metadata and structure changes."
   },
   {
     "slug": "chatbot-assistant",
     "name": "Chatbot Assistant",
     "category": "Text",
     "price_xlm": "250",
-    "description": "Example: a support chatbot set up from your product manuals or knowledge base.",
-    "image": "/agent_chatbot.webp"
+    "description": "Example: a support chatbot set up from your product manuals or knowledge base."
   },
   {
     "slug": "sentiment-analyst",
     "name": "Sentiment Analyst",
     "category": "Text",
     "price_xlm": "150",
-    "description": "Example: sentiment scoring of reviews, survey answers and social media posts.",
-    "image": "/agent_sentiment.webp"
+    "description": "Example: sentiment scoring of reviews, survey answers and social media posts."
   },
   {
     "slug": "video-generator-ai",
     "name": "Video Generator AI",
     "category": "Creative",
     "price_xlm": "700",
-    "description": "Example: a short captioned video made from a script you provide.",
-    "image": "/agent_video.webp"
+    "description": "Example: a short captioned video made from a script you provide."
   }
 ]

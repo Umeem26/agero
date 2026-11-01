@@ -8,13 +8,12 @@ const onChain = (overrides) => ({
 });
 
 describe('presentAgent', () => {
-  it('shows a sample agent with the frontend description, category and image, not the older on-chain text', () => {
+  it('shows a sample agent with the frontend description and category, not the older on-chain text', () => {
     const sample = SAMPLE_AGENTS[0];
     const a = presentAgent(onChain({ name: sample.name, description: `${SAMPLE_PREFIX}Older seed text with AI claims` }));
     expect(a.isSample).toBe(true);
     expect(a.summary).toBe(sample.description);
     expect(a.category).toBe(sample.category);
-    expect(a.image).toBe(sample.image);
   });
 
   it('falls back to the on-chain text (without the prefix) for a sample name it does not know', () => {
@@ -22,14 +21,12 @@ describe('presentAgent', () => {
     expect(a.isSample).toBe(true);
     expect(a.summary).toBe('Seeded elsewhere.');
     expect(a.category).toBe('Other');
-    expect(a.image).toBeNull();
   });
 
   it('shows a real agent exactly as stored in the contract', () => {
     const a = presentAgent(onChain({ name: SAMPLE_AGENTS[0].name, ratingSum: 9n, ratingCount: 2 }));
     expect(a.isSample).toBe(false);
     expect(a.summary).toBe('Does custom work.');
-    expect(a.image).toBeNull();
     expect(a.averageRating).toBe(4.5);
   });
 });
