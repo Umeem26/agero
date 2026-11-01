@@ -1,4 +1,4 @@
-// DOM-free logic behind useDialog (Modal.jsx), kept separate so it can be unit-tested.
+// DOM-free logic behind useDialog (useDialog.js), kept separate so it can be unit-tested.
 
 // Where Tab should move inside a dialog. `index` is the focused element among the dialog's
 // `count` focusable elements (-1 = focus is outside them, e.g. on the dialog itself).

@@ -2,7 +2,7 @@ import { useId, useRef } from 'react';
 import { CheckCircle, AlertCircle, X } from 'lucide-react';
 import { explorerTxUrl } from '../chain/config';
 import { ExplorerLink, KeyValueList } from './ui';
-import { useDialog } from './Modal';
+import { useDialog } from './useDialog';
 
 const STEPS = [
   { id: 'simulate', label: 'Simulating the call on Testnet' },

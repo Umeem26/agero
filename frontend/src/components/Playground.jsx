@@ -1,6 +1,6 @@
 import { useId, useRef, useState } from 'react';
 import { X } from 'lucide-react';
-import { useDialog } from './Modal';
+import { useDialog } from './useDialog';
 
 // Simulated x402 playground. Not linked to the escrow: it sends a mock payment reference to the
 // local gateway demo (scripts/x402_simulator.js) or, if that is not running, simulates in the browser.
