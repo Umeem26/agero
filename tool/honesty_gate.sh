@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Honesty gate: fails (exit 1) if overclaiming phrases appear in the UI source or README.
-# Usage: tool/honesty_gate.sh [path ...]   (defaults to frontend/src, frontend/server and README.md)
+# Usage: tool/honesty_gate.sh [path ...]   (defaults to frontend/src, frontend/server, README.md and docs/status.md)
 set -euo pipefail
 
 BANNED_PHRASES=(
@@ -53,7 +53,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [ "$#" -gt 0 ]; then
   TARGETS=("$@")
 else
-  TARGETS=("$ROOT/frontend/src" "$ROOT/frontend/server" "$ROOT/README.md")
+  TARGETS=("$ROOT/frontend/src" "$ROOT/frontend/server" "$ROOT/README.md" "$ROOT/docs/status.md")
 fi
 
 fail=0

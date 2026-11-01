@@ -1,0 +1,16 @@
+{
+  "name": "agero-x402-sim",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local x402 payment gateway simulator for Agero (MOCK references; not linked to the escrow)",
+  "main": "x402_simulator.js",
+  "scripts": {
+    "gateway": "node x402_simulator.js",
+    "test-client": "node test_x402.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.0",
+    "express": "^4.19.0",
+    "stellar-sdk": "^13.0.0"
+  }
+}

@@ -35,3 +35,9 @@ npm-debug.log*
 
 # ── Local state (scripts/bootstrap-testnet.ps1, frontend/server/cli.mjs) ──
 .agero-bootstrap.json
+
+# ── Real agent CLI output and screenshot runs (docs/deploy.md §12, scripts/capture-screens.mjs) ──
+frontend/server/.data/
+job-input*.json
+agero-job-*.json
+screenshots-out/

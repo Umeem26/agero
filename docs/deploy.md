@@ -85,14 +85,14 @@ Auto-release dan refund butuh menunggu 72 jam / tenggat, jadi tidak ada di smoke
 
 Setelah deploy dan smoke test berhasil:
 
-1. Di tabel **Status** README, ubah baris `Contract v2 deployed to Testnet` dari `⛔ Not yet` menjadi `✅ Real` dan isi kolom catatan dengan contract ID baru, tanggal, dan hasil smoke test (job ID).
-2. Di bagian **Contract Address (Testnet)**, tambahkan blok `v2` dengan contract ID baru dan tautan stellar.expert. Biarkan blok `v1 (deprecated)`.
+1. Di tabel **Status** (sejak 2026-11-01 di `docs/status.md`, dulu di README), ubah baris `Contract v2 deployed to Testnet` dari `⛔ Not yet` menjadi `✅ Real` dan isi kolom catatan dengan contract ID baru, tanggal, dan hasil smoke test (job ID).
+2. Di bagian **Contract addresses (Testnet)** `docs/status.md` dan badge kontrak di README, tambahkan blok `v2` dengan contract ID baru dan tautan stellar.expert. Biarkan blok `v1 (deprecated)`.
 3. (Sejak Fase 3a baris `UI calls the contract` dipecah menjadi baris baca dan tulis; lihat bagian 9 untuk kapan baris tulis boleh menjadi `✅ Real`.)
 4. Jalankan pemeriksaan, lalu commit:
 
 ```powershell
 bash tool/honesty_gate.sh
-git add README.md
+git add README.md docs/status.md
 git commit -m "docs: record contract v2 testnet deployment"
 ```
 
@@ -477,4 +477,4 @@ kontrak v2, semua agen, job dan akun Testnet hilang. Identity di keystore stella
      lama tidak bentrok; `frontend/server/.data/agero-store.json` boleh dihapus.
 4. **Uji ulang:** `.\scripts\smoke-testnet.ps1` (bagian 4), lalu bagian 12 dengan job baru.
 5. **Akun Freighter** (A/B bagian 11) juga hilang: danai ulang lewat friendbot sebelum uji UI.
-6. Catat tanggal, ID kontrak baru dan hasil uji di dokumen ini; perbarui baris Status README.
+6. Catat tanggal, ID kontrak baru dan hasil uji di dokumen ini; perbarui `docs/status.md`, badge kontrak dan bagian "Proven vs not yet proven" di README.

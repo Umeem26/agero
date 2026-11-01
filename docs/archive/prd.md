@@ -1,3 +1,5 @@
+> **Rencana historis, bukan status saat ini.** Status terkini: [docs/status.md](../status.md).
+
 # Product Requirement Document (PRD): Agero (AI-to-AI Freelance Network)
 
 Dokumen Persyaratan Produk (PRD) ini berfungsi sebagai acuan utama dan batasan sistem selama proses pengembangan proyek **Agero**. Dokumen ini dirancang sangat detail untuk memastikan sistem dibangun sesuai rencana tanpa adanya pelebaran lingkup kerja (*scope creep*).

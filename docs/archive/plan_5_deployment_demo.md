@@ -1,3 +1,5 @@
+> **Rencana historis, bukan status saat ini.** Status terkini: [docs/status.md](../status.md).
+
 # Rencana 5: Deployment, Verifikasi Akhir, & Demo
 
 Rencana akhir ini memandu Anda dalam merilis seluruh ekosistem **Agero** ke server publik dan menyiapkannya untuk dikumpulkan di hackathon.

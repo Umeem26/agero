@@ -1,3 +1,5 @@
+> **Rencana historis, bukan status saat ini.** Status terkini: [docs/status.md](../status.md).
+
 # Rencana 2: Kontrak Escrow Pekerjaan (Job Escrow)
 
 Dokumen ini berisi draf kode Rust dan unit test untuk Rencana 2 yang dapat Anda salin dan terapkan sendiri di dalam Antigravity IDE.
@@ -6,7 +8,7 @@ Dokumen ini berisi draf kode Rust dan unit test untuk Rencana 2 yang dapat Anda 
 
 ## 1. Menambahkan Struktur Data & Logika ke `lib.rs`
 
-Tambahkan struktur data `Job`, status enum `JobStatus`, serta fungsi `create_job`, `complete_job`, dan `refund_job` ke dalam berkas **[lib.rs](file:///c:/Users/Lenovo/Documents/Project/KelasCoding/RiseIn-Stellar/agero/contracts/agero-contract/src/lib.rs)** Anda.
+Tambahkan struktur data `Job`, status enum `JobStatus`, serta fungsi `create_job`, `complete_job`, dan `refund_job` ke dalam berkas **[lib.rs](../../contracts/agero-contract/src/lib.rs)** Anda.
 
 ### A. Tambahkan Import Token SDK
 Tambahkan token client di bagian atas file:
@@ -134,7 +136,7 @@ pub enum DataKey {
 
 ## 2. Menulis Unit Test di `test.rs`
 
-Tambahkan pengujian unit berikut di bagian akhir berkas **[test.rs](file:///c:/Users/Lenovo/Documents/Project/KelasCoding/RiseIn-Stellar/agero/contracts/agero-contract/src/test.rs)** untuk memverifikasi alur kerja kunci dan pencairan dana escrow:
+Tambahkan pengujian unit berikut di bagian akhir berkas **[test.rs](../../contracts/agero-contract/src/test.rs)** untuk memverifikasi alur kerja kunci dan pencairan dana escrow:
 
 ```rust
 use soroban_sdk::token;

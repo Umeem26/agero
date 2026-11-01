@@ -1,3 +1,5 @@
+> **Rencana historis, bukan status saat ini.** Status terkini: [docs/status.md](../status.md).
+
 # Rencana 4: Pembuatan Portal Frontend Agero
 
 Rencana ini membantu Anda menyusun antarmuka aplikasi web *Agero* menggunakan React/Next.js dan mengintegrasikannya dengan dompet Freighter serta *smart contract* Soroban.

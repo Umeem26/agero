@@ -6,6 +6,7 @@ Freighter: create/complete/rate (klien) dan register/update/deliver (agen) diuji
 `frontend/src/chain/rpc.js`. x402 simulasi; aplikasi live tidak menjalankan agen (hanya hash hasil yang dicatat).
 Fase 5a: agen nyata Contract Inspector di `frontend/server/` (CLI lokal, tulis lewat satu `invoke` di
 `frontend/server/chain.js`), tes unit offline; e2e Testnet belum dijalankan (`docs/deploy.md` §12).
+Status per fitur: `docs/status.md` (dipindai gate). Simulator x402: `scripts/x402-sim/` (package sendiri).
 Lihat `docs/audit/agero-audit.md`.
 
 ## Kejujuran

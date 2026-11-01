@@ -18,7 +18,7 @@ Kontrak Soroban-nya nyata: terkompilasi, 5/5 tes lulus, dan WASM yang ter-deploy
 | SDK Stellar di frontend | **Tidak ada.** Tidak ada `@stellar/stellar-sdk`, RPC, atau contract ID di `frontend/src` maupun di bundle produksi | `frontend/package.json:10-15`, grep bundle: `CBEII`=0, `soroban-rpc`=0 |
 | CI | **Tidak ada** (tidak ada `.github/`) | `ls .github` → kosong |
 | `.gitignore` | Meng-ignore `target/`, `.soroban/`, `.stellar/`, `node_modules/`, `frontend/dist/`, `.env*`, `.vscode/`, `*.pdf`, `*.pem`, `*.key`, log. Dua PDF materi bootcamp di root ter-ignore (tidak ter-commit) | `.gitignore:1-31`, `git status --ignored` |
-| Secret | Tidak ditemukan secret key Stellar (`S…` 56 karakter) di file ter-track, di riwayat git (`git log --all -p`), maupun di bundle. Tidak ada API key. Satu-satunya alamat yang di-hardcode adalah public key `G…` | `scripts/x402_simulator.js:11` (public key, bukan secret) |
+| Secret | Tidak ditemukan secret key Stellar (`S…` 56 karakter) di file ter-track, di riwayat git (`git log --all -p`), maupun di bundle. Tidak ada API key. Satu-satunya alamat yang di-hardcode adalah public key `G…` | `scripts/x402-sim/x402_simulator.js:11` (public key, bukan secret) |
 
 ## 2. Status build & tes
 
@@ -31,7 +31,7 @@ Kontrak Soroban-nya nyata: terkompilasi, 5/5 tes lulus, dan WASM yang ter-deploy
 | `npm ci` (frontend) | ✅ | `npm audit`: **4 high** (vite dev-server, launch-editor). `--omit=dev`: 0 |
 | `npm run build` | ✅ | `index-BWZaT6sa.js` 256 kB (77 kB gzip) |
 | `npm run lint` (oxlint) | ✅ 0 error, 1 warning | `App.jsx:409` `playgroundStatus` tidak dipakai |
-| `npm ci` (root/gateway) | ✅ | `npm audit`: **8 kerentanan (1 critical, 5 high, 2 moderate)**: axios, body-parser/qs (express 4) |
+| `npm ci` (root/gateway, sejak 2026-11-01 di `scripts/x402-sim/`) | ✅ | `npm audit`: **8 kerentanan (1 critical, 5 high, 2 moderate)**: axios, body-parser/qs (express 4) |
 
 ## 3. Kontrak — verifikasi dugaan
 
@@ -69,9 +69,9 @@ File `test_snapshots/*.json` ter-commit tetapi tidak di-assert.
 - **Kontrak tidak dipanggil.** Tidak ada import SDK Stellar, contract ID, atau URL RPC di `frontend/src`, dan grep bundle produksi menunjukkan 0 kemunculan contract ID. `launchTx` hanya membuka drawer dan menyimpan callback di `window._cb` (`App.jsx:447-450`); tombol Approve menjalankan `setTimeout(…, 1800)` lalu callback (`App.jsx:1131`). Semua state ditulis ke `localStorage` (`App.jsx:458,472,480-481,494,514,529`).
 - **Demo mode** aktif secara default (`App.jsx:385`). `connectWallet(true)` mengembalikan alamat palsu `GBDEMO777…AGERO` (`wallet.js:11-14`), yang bukan StrKey valid. Di mode Freighter yang nyata hanyalah *alamat* wallet (`wallet.js:16-39`); transaksi tetap simulasi. Tx hash di mode Freighter adalah 64 hex acak dengan prefix `0x` (`App.jsx:470`), tetapi UI menyebutnya "real transaction hashes" (`App.jsx:841`) dan "This hash represents your locked escrow contract on Soroban" (`App.jsx:1225`). Notifikasi `"… registered on-chain"` (`App.jsx:460`) juga tidak benar.
 - **Data 11 agen hardcoded** di `INITIAL_AGENTS` (`App.jsx:50-128`) dengan owner palsu (`GBBB5678...AGENT1` dst.), rating/`total_jobs` yang dikarang, dan endpoint fiktif. Ulasan juga hardcoded di `MOCK_REVIEWS` (`App.jsx:7-48`, pengguna fiktif). Keduanya di-seed ke localStorage (`App.jsx:423,426`). On-chain hanya ada 1 invocation dan 1 storage entry (API stellar.expert), dan instance storage `null` (JobCount belum pernah ditulis, artinya `create_job` belum pernah dijalankan on-chain).
-- **Output agen tidak berasal dari LLM.** "Sample Work Output" adalah PNG statis di `public/` (`App.jsx:711-718`). Tidak ada panggilan LLM di seluruh repo (grep openai/anthropic/gemini/llm → hanya PRD `docs/prd.md:69`). Gateway hanya mengembalikan `text.substring(0, 50)` (`scripts/x402_simulator.js:111`).
+- **Output agen tidak berasal dari LLM.** "Sample Work Output" adalah PNG statis di `public/` (`App.jsx:711-718`). Tidak ada panggilan LLM di seluruh repo (grep openai/anthropic/gemini/llm → hanya PRD `docs/archive/prd.md:69` (sebelum banner arsip)). Gateway hanya mengembalikan `text.substring(0, 50)` (`scripts/x402-sim/x402_simulator.js:111`).
 - **x402 berupa simulasi di situs live.** Playground melakukan `fetch('http://' + api_url)` (`App.jsx:554`). Di Vercel tidak ada gateway, dan 10 dari 11 endpoint adalah domain fiktif, sehingga request gagal → fallback ke "sandbox visual simulation" yang tetap mencetak `"[x402] Payment VERIFIED via Escrow simulation in smart contract."` dan `200 OK (Simulated)` (`App.jsx:577-590`). Kalau gateway lokal menjawab OK, UI selalu menulis "Payment VERIFIED by ledger via Horizon" (`App.jsx:565`), bahkan untuk `MOCK_TX_XLM`.
-- **Gateway `scripts/x402_simulator.js`** (hanya berjalan lokal):
+- **Gateway `scripts/x402-sim/x402_simulator.js`** (hanya berjalan lokal):
   - bypass `MOCK_TX_XLM`/`MOCK_TX_USDC` tanpa verifikasi (`:38-49`);
   - verifikasi nyata hanya mencari operasi klasik `payment` ke alamat hardcoded dengan jumlah persis `1.0000000` (`:11-12,65`). Transaksi escrow Soroban (`invoke_host_function`) tidak akan pernah lolos, jadi x402 dan escrow **tidak terhubung**;
   - USDC hanya dicek lewat `asset_code` tanpa issuer (`:71`), sehingga aset "USDC" palsu lolos;

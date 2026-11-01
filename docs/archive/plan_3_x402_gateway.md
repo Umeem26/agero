@@ -1,3 +1,5 @@
+> **Rencana historis, bukan status saat ini.** Status terkini: [docs/status.md](../status.md).
+
 # Rencana 3: Integrasi Gateway & Pembayaran x402 (M2M)
 
 Rencana ini memandu Anda dalam mensimulasikan protokol **x402 (Agentic Payments)** di sisi server API Agen menggunakan Node.js.
@@ -13,9 +15,9 @@ npm install stellar-sdk express
 
 ---
 
-## 2. Server Gateway API (`scripts/x402_simulator.js`)
+## 2. Server Gateway API (`scripts/x402-sim/x402_simulator.js`)
 
-Buat berkas **`scripts/x402_simulator.js`** dan masukkan kode berikut untuk memverifikasi pembayaran on-chain sebelum memproses API request:
+Buat berkas **`scripts/x402-sim/x402_simulator.js`** dan masukkan kode berikut untuk memverifikasi pembayaran on-chain sebelum memproses API request:
 
 ```javascript
 const express = require('express');
@@ -97,9 +99,9 @@ app.listen(port, () => {
 
 ---
 
-## 3. Script Penguji Pembeli (`scripts/test_x402.js`)
+## 3. Script Penguji Pembeli (`scripts/x402-sim/test_x402.js`)
 
-Buat berkas **`scripts/test_x402.js`** untuk mensimulasikan permintaan klien yang melakukan pembayaran on-chain terlebih dahulu dan melampirkan hash-nya ke request:
+Buat berkas **`scripts/x402-sim/test_x402.js`** untuk mensimulasikan permintaan klien yang melakukan pembayaran on-chain terlebih dahulu dan melampirkan hash-nya ke request:
 
 ```javascript
 const axios = require('axios');
@@ -136,10 +138,10 @@ testRequest();
 ## 4. Pengujian Rencana 3
 1. Jalankan server simulator di terminal:
    ```bash
-   node scripts/x402_simulator.js
+   node scripts/x402-sim/x402_simulator.js
    ```
 2. Kirim request uji menggunakan script pembeli di terminal kedua:
    ```bash
-   node scripts/test_x402.js
+   node scripts/x402-sim/test_x402.js
    ```
 3. Verifikasi respons sukses `200 OK` dengan data ringkasan teks.

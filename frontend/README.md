@@ -1,16 +1,22 @@
-# React + Vite
+# Agero frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React 19 + Vite 8 SPA that reads Agero contract v2 on Stellar Testnet and signs escrow actions in Freighter.
+Node 22.12+ (`@stellar/stellar-sdk` 17, vitest 5).
 
-Currently, two official plugins are available:
+| Script | What it does |
+|---|---|
+| `npm run dev` | Dev server on http://localhost:5173 |
+| `npm test` | Vitest unit tests (`src/` and `server/`, no network) |
+| `npm run lint` | oxlint (CI runs `npm run lint -- --deny-warnings`) |
+| `npm run build` / `npm run preview` | Production build to `dist/` / serve it locally |
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+**Env:** every `VITE_*` value has a Testnet default in `src/chain/config.js`; to override, copy `.env.example` to
+`.env.local` (`VITE_CONTRACT_ID`, `VITE_RPC_URL`, `VITE_NETWORK_PASSPHRASE`, `VITE_XLM_SAC`, `VITE_EXPLORER_URL`).
+They end up in the browser bundle, so never put a secret there.
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+| Folder | Contents |
+|---|---|
+| `src/chain/` | `config` (env), `rpc` (simulated reads, one write pipeline), `wallet` (Freighter), `jobs` (status rules), `hash` (SHA-256), `units`, `profile`, `errors` |
+| `src/components/` | Pages and widgets: `HireModal`, `MyJobs`, `AgentDashboard`, `EscrowTimeline`, `ContractPulse`, `Playground` (simulated x402), shared `ui` |
+| `src/data/` | `sample-agents.json` (seed data, UI-only categories) |
+| `server/` | Phase 5a real agent (Contract Inspector): `cli.mjs`, guard, chain, pipeline, store, `executors/`; not part of the web build ([docs/deploy.md §12](../docs/deploy.md#12-agen-nyata-5a)) |
