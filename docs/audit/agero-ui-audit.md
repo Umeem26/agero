@@ -420,3 +420,26 @@ Dependensi: tidak ada yang ditambah atau dihapus. Robot "3D" ternyata canvas bua
 1. Kartu job nyata di My Jobs / Agent Dashboard: DeadlineMeter berjalan dari waktu ledger dan HashChip tersegel pada job Delivered.
 2. Modal Deliver dan Verify: HashChip hasil hitung lokal, tombol salin (izin clipboard) dan vonis cocok/tidak.
 3. Ringkasan Hire dengan meter tenggat, drawer TxProgress, dan glyph alamat sendiri di kartu "Your agent".
+
+## 14. Status Fase 4d — polish visual (2026-11-01)
+
+Diukur dengan skrip Playwright yang sama (Chromium 1243, `vite preview`, Testnet langsung, tanpa wallet), Home dan Marketplace di 320/375/414/768/1440, dengan dan tanpa `prefers-reduced-motion: reduce`. Screenshot: `ui-shots/after-4d/` (Home dan Marketplace, 375 dan 1440; batas 4).
+
+| Cek | Sesudah 4d |
+|---|---|
+| Hero | Contract pulse di kolom kiri di bawah tombol; bawahnya y = 678 px di 1440 (di atas lipatan 900). H1 40 px di < 992 (sebelumnya 32 di < 768), 48 px (`--text-4xl`, langkah rasio 1,25 berikutnya) di ≥ 992, `text-wrap: balance` |
+| Escrow timeline | Slot kosong di tiap kolom + panah di garis kolom (→ → / ⇄) terlihat di langkah awal; token hanya `transform` 300 ms; panah tidak menimpa token di 320 (overlap 0 px) |
+| Footer AgentCard | Grid dua baris tetap; tinggi footer 67 px di semua kartu dan lebar; 0 baris grid dengan garis pemisah tidak sejajar |
+| Penanda sumber | 0 "on contract" per kartu; satu catatan per daftar; kategori diberi label "UI-only" |
+| Garis putus-putus | Hanya `.sample-badge`, `.illus-badge`, `.sample-note`, `.btn-sim` (semua peach). Kategori, filter, placeholder: solid |
+| Sand vs peach | ΔE2000 8,0, ΔL* 10,5, hue 68°/69°, 1,35:1 → terlalu dekat; bar meter pindah ke mint `--fg` (9,85:1 di jalur), dicatat di `design-system.md` |
+| Overflow 320–768 dan 1440 / kontrol < 40 px / animasi jalan saat `reduce` | 0 / 0 / 0 |
+| Fokus | Filter chip: outline solid 2 px `#5cb8b2` |
+
+Tidak ada pasangan warna teks baru (label "UI-only" memakai `--fg-dim`, ≥ 5,12:1). Dependensi tidak berubah; `chain/` dan `contracts/` tidak disentuh.
+
+**Dilanggar dengan sengaja / catatan.**
+- `--text-4xl` 48 ditambahkan: H1 sudah di langkah teratas (40) pada 1440, jadi tidak bisa membesar tanpa satu langkah lagi. Nilainya mengikuti rasio skala (40 × 1,25 ≈ 48) dan hanya dipakai H1 hero.
+- `btn-sim` tetap dashed: tombol `[sim]` termasuk keluarga "bukan nyata" yang sama dengan Sample.
+- Badge Sample diubah dari solid ke dashed agar aturan "dashed = Sample/Illustration" konsisten.
+- Screenshot detail agen dan Agent Dashboard di README masih dari 4c (chip kategori lama).

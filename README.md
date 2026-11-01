@@ -98,20 +98,20 @@ CBEIINKJWTVYY3WNJGWFWJECNLZHT2RA3YXATDLTGKZGFN5ZOMDRBW5X
 
 ## 🖼️ Screenshots
 
-Captured on 2026-11-01 from the phase 4c build (`vite preview`, Chromium, live Testnet reads, no wallet connected). More widths in [docs/audit/ui-shots/after-4c/](docs/audit/ui-shots/after-4c/).
+Captured on 2026-11-01 (`vite preview`, Chromium, live Testnet reads, no wallet connected). Home and Marketplace are from the phase 4d build ([after-4d/](docs/audit/ui-shots/after-4d/)); Agent detail and Agent dashboard are still from phase 4c ([after-4c/](docs/audit/ui-shots/after-4c/)), so their category chip predates the 4d "UI-only" label.
 
 ### Home
 The hero is an interactive illustration of one escrow job (labelled as such): the XLM moves Client → Escrow → Agent, the deadline meter counts down and the result hash is sealed on delivery. Below it, the "Contract pulse" shows numbers read from the contract when the page loads, and a state diagram of every status change.
 
 <p align="center">
-  <img src="docs/audit/ui-shots/after-4c/home-1440.jpg" width="90%" alt="Home page at 1440 px: escrow timeline illustration, contract pulse, registered agents, state diagram" />
+  <img src="docs/audit/ui-shots/after-4d/home-1440.jpg" width="90%" alt="Home page at 1440 px: hero with contract pulse under the buttons, escrow timeline illustration, registered agents, state diagram" />
 </p>
 
 ### Marketplace and agent detail
 Listings, prices, ratings and job counts are read from contract v2 and marked "on contract"; the category (dashed) exists only in the frontend. Each agent has a glyph derived from its owner address. "Sample" marks the seeded agents.
 
 <p align="center">
-  <img src="docs/audit/ui-shots/after-4c/marketplace-1440.jpg" width="45%" alt="Marketplace at 1440 px" />
+  <img src="docs/audit/ui-shots/after-4d/marketplace-1440.jpg" width="45%" alt="Marketplace at 1440 px" />
   <img src="docs/audit/ui-shots/after-4c/agent-detail-1440.jpg" width="45%" alt="Agent detail at 1440 px" />
 </p>
 
@@ -120,7 +120,7 @@ The former Developer page is now the collapsible "Use the CLI instead" section o
 
 <p align="center">
   <img src="docs/audit/ui-shots/after-4c/agent-dashboard-disconnected-1440.jpg" width="60%" alt="Agent dashboard without a wallet at 1440 px" />
-  <img src="docs/audit/ui-shots/after-4c/marketplace-375.jpg" width="25%" alt="Marketplace at 375 px" />
+  <img src="docs/audit/ui-shots/after-4d/marketplace-375.jpg" width="25%" alt="Marketplace at 375 px" />
 </p>
 
 ---
@@ -274,7 +274,7 @@ agero/
 ├── docs/
 │   ├── contract-v2.md           # State machine, events, errors, audit → test map
 │   ├── deploy.md                # Testnet deploy, seed, frontend config, manual UI checklist
-│   ├── audit/                   # Audit reports + phase screenshots (README uses ui-shots/after-4c)
+│   ├── audit/                   # Audit reports + phase screenshots (README uses ui-shots/after-4d and after-4c)
 │   ├── design-system.md         # Tokens, fonts, usage rules
 │   └── *.md                     # Implementation plans
 ├── tool/

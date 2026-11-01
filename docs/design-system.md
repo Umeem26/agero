@@ -27,9 +27,9 @@ setiap pasangan teks × permukaan; angka di bawah adalah nilai terendah di antar
 | `--brand` | `#116466` | Teal, **satu-satunya aksen**: isian tombol primer, filter aktif, kotak logo | – |
 | `--brand-hover` | `#146f71` | Hover tombol primer | – |
 | `--brand-fg` | `#d1e8e2` | Teks di atas `--brand` | 5,38:1 (hover 4,62) |
-| `--accent-text` | `#5cb8b2` | Teal sebagai teks: tautan, penanda "on contract", ring fokus | 4,60:1 |
+| `--accent-text` | `#5cb8b2` | Teal sebagai teks: tautan, penanda sumber kontrak, ring fokus | 4,60:1 |
 | `--sample` | `#ffcb9a` | Peach: **khusus** Sample / Simulated / ilustrasi | 7,32:1 |
-| `--pending` | `#d9b08c` | Sand: menunggu, tenggat, meter, bintang | 5,41:1 |
+| `--pending` | `#d9b08c` | Sand: badge Pending, teks tenggat lewat, bintang (bukan bar meter) | 5,41:1 |
 | `--ok` / `--error` | `#8dd9a6` / `#e89898` | Status selesai / gagal | 6,47 / 4,61:1 |
 | `--scrim` | `rgba(8,11,10,.72)` | Hanya latar modal | – |
 
@@ -38,10 +38,16 @@ Aturan:
   mint, 10 % teal.
 - **Peach berarti "bukan nyata".** Hanya badge Sample, catatan Sample, tombol `[sim]`, log `[sim]`,
  . Juga label "Illustration" di hero. Tidak boleh dipakai untuk penekanan atau dekorasi.
-- **Garis putus-putus = bukan dari kontrak.** Badge kategori (metadata UI-only), filter kategori,
-  tombol simulasi dan catatan Sample memakai border dashed; data kontrak memakai garis solid.
-- Sand untuk semua yang sedang menunggu waktu (badge Pending, meter, bintang). Bintang memakai satu
+- **Garis putus-putus = bukan nyata.** Hanya badge Sample, label "Illustration", catatan Sample dan
+  tombol `[sim]` (semuanya peach). Chip kategori, filter, slot dan placeholder memakai garis solid
+  hairline (`--border`; filter sebagai kontrol memakai `--border-strong`).
+- Sand untuk status menunggu (badge Pending, teks "ended … ago") dan bintang. Bintang memakai satu
   token, dan agen tanpa rating menampilkan teks "No ratings yet", bukan bintang kosong.
+- **Bar meter memakai mint (`--fg`), bukan sand** (fase 4d). Diukur dengan skrip CIELAB: sand
+  `#d9b08c` vs peach `#ffcb9a` punya hue sama (68° vs 69°), ΔL* 10,5, ΔE2000 8,0 dan rasio
+  luminans 1,35:1; di hero meter berdiri dekat label Illustration peach sehingga terbaca satu
+  keluarga. Mint vs peach: ΔE2000 26,7, hue 178°; mint di jalur `surface-2` 9,85:1. `--brand`
+  ditolak karena hanya 1,83:1 di jalur.
 - Error `#e28c8c` dari palet lama dinaikkan sedikit ke `#e89898` agar lolos 4,5:1 di `surface-3`.
 - Tidak ada warna biru, gradien, glow, atau glass.
 
@@ -67,7 +73,8 @@ Archivo lebar, Chivo, IBM Plex Sans Condensed, Familjen Grotesk):
   muat di 320 px.
 
 Skala (rasio ±1,25 dari 16): `--text-xs` 12, `--text-sm` 14, `--text-md` 16, `--text-lg` 20,
-`--text-xl` 24, `--text-2xl` 32, `--text-3xl` 40. Line-height 1,15 untuk judul, 1,6 untuk teks.
+`--text-xl` 24, `--text-2xl` 32, `--text-3xl` 40, `--text-4xl` 48 (langkah berikut rasio yang sama,
+khusus H1 hero ≥ 992 px; H1 hero 40 di bawahnya). Line-height 1,15 untuk judul, 1,6 untuk teks.
 Judul tegak, tanpa eyebrow kapital, tanpa gradien.
 
 ## Spasi, radius, kedalaman, gerak
@@ -87,24 +94,30 @@ Judul tegak, tanpa eyebrow kapital, tanpa gradien.
 - **HashChip** (`components/HashChip.jsx`): hash 64-hex dalam blok mono 4 × 16 karakter, dikelompokkan
   per 4, dengan tombol salin. Varian `sealed` (border teal + ikon gembok) untuk hash yang sudah
   tercatat di kontrak. Dipakai di Deliver, Verify, kartu job dan hero.
-- **DeadlineMeter** (`components/DeadlineMeter.jsx`): bar tipis satu warna (sand) + teks sisa waktu
+- **DeadlineMeter** (`components/DeadlineMeter.jsx`): bar tipis satu warna (mint) + teks sisa waktu
   ("31 h 12 m left") dari waktu ledger. Teks membawa informasinya; bar `aria-hidden`. Dipakai di
   kartu job (tenggat saat Pending, masa tinjau 72 jam saat Delivered), ringkasan Hire dan hero.
 - **Escrow timeline** (`components/EscrowTimeline.jsx`): hero Home. Satu job contoh berlabel
   "Illustration, not a real job" (peach dashed) yang dijalankan pengguna: Play / Next step / Reset,
-  pilihan hasil Approved atau Refunded. XLM berpindah Client → Escrow → Agent dengan `transform`
+  pilihan hasil Approved atau Refunded. Tiap kolom Client/Escrow/Agent punya slot kosong (hairline
+  solid) dan panah di garis kolom menunjukkan rute (→ → untuk Approved, ⇄ untuk Refunded); panah yang
+  sudah dilewati berwarna mint. Rute terbaca sebelum Play. XLM berpindah Client → Escrow → Agent dengan `transform`
   300 ms; HashChip muncul tersegel saat Delivered; DeadlineMeter bergerak. Saat reduced motion:
   tanpa autoplay, mulai dari langkah terakhir, semua langkah bisa dipilih.
 - **AddressGlyph** (`components/AddressGlyph.jsx`, `glyph.js`): pola 5 × 5 simetris yang diturunkan
   deterministik dari alamat pemilik (FNV-1a + xorshift), dua warna teal di atas forest. Pemilik yang
   sama selalu punya glyph yang sama (kartu, detail, dashboard). Pengganti gambar agen.
-- **Contract pulse** (`components/ContractPulse.jsx`): `agent_count`, `job_count`, ledger terakhir
-  dan alamat kontrak, dibaca sekali saat halaman dimuat ("Read from Stellar Testnet on page load").
+- **Contract pulse** (`components/ContractPulse.jsx`): di kolom kiri hero, di bawah tombol (di atas
+  lipatan pada 1440 × 900). `agent_count`, `job_count`, ledger terakhir dan alamat kontrak, dibaca sekali saat halaman dimuat ("Read from Stellar Testnet on page load").
 - **StatusFlow** (`components/StatusFlow.jsx`): diagram status SVG hairline dengan satu aksen pada
   jalur auto-release 72 jam, plus tabel transisi sebagai padanan teksnya.
 - **StatCard, KeyValueList, EmptyState, ConnectPrompt, AgentCard, JobCard** di `components/`.
-- **Penanda sumber data:** `ContractMark` ("on contract", mono teal) untuk nilai yang dibaca dari
-  kontrak; badge kategori dashed dan redup untuk metadata yang hanya ada di frontend.
+- **Penanda sumber data:** daftar agen memakai satu `ListSourceNote` di header ("All listed values
+  are read from the contract, except fields marked UI-only"); kartu hanya menandai field UI-only
+  (`CategoryChip`, chip solid dengan label mono "UI-only"). `ContractMark` ("on contract") tetap
+  dipakai pada StatCard satuan.
+- **AgentCard footer:** grid dua baris tetap (harga | jumlah selesai, lalu rating), tiap baris satu
+  baris teks, sehingga garis pemisah sejajar antar kartu dalam satu baris grid.
 
 ## Larangan (gerbang anti-slop)
 
