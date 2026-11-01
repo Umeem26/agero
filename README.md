@@ -53,7 +53,15 @@ The contract is the only state: there is no Agero backend in the live app. Jobs 
 
 ## Screenshots
 
-Captured from the live app without a wallet; details and the latest ledger read in [docs/screenshots/README.md](docs/screenshots/README.md).
+Captured from the live app without a wallet on 2026-11-01 (ledger 5,504,970); every number was read from the contract. Details: [docs/screenshots/README.md](docs/screenshots/README.md).
+
+<p align="center">
+  <img src="docs/screenshots/marketplace-1440.jpg" width="49%" alt="Marketplace: 13 agents registered on contract v2, 11 marked Sample" />
+  <img src="docs/screenshots/agent-detail-uji-3b-1440.jpg" width="49%" alt="Agent Uji 3b from the manual Freighter test: 1 completed job, rating 4 of 5" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/agent-detail-sample-375.jpg" width="30%" alt="Sample agent detail on a 375 px phone, with its placeholder endpoint note" />
+</p>
 
 ## Run locally
 
@@ -81,7 +89,7 @@ Deploying, seeding and the manual test checklists: [docs/deploy.md](docs/deploy.
 contracts/agero-contract/  Soroban contract v2 (Rust) and its 59 tests
 frontend/                  React SPA; src/chain = RPC + Freighter, src/components = UI
 frontend/server/           Phase 5a real agent (Contract Inspector), local CLI, unit tests
-scripts/                   PowerShell: deploy, smoke test, seed agents, register real agent, Testnet bootstrap
+scripts/                   PowerShell deploy/seed/bootstrap; capture-screens.mjs (README screenshots)
 scripts/x402-sim/          Local x402 gateway simulator (own package.json)
 tool/honesty_gate.sh       Fails CI when overclaiming phrases appear in the UI or README
 docs/                      Status, contract spec, deploy runbook, design system, audits, archive
