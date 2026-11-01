@@ -330,6 +330,14 @@ Transaksi kontrak (semua `successful: true`, satu operasi `invoke_host_function`
 
 Saldo cocok persis dengan transaksi di atas: A = 10000 − 2 − 0.0385719 (fee) = `9997.9614281` XLM; B = 10000 + 2 − 0.0508176 (fee) = `10001.9491824` XLM.
 
+**Addendum (dicek lewat Horizon Testnet, operations akun B):** `update_agent` kedua, setelah uji manual, deskripsi diganti menjadi `Manual test agent used for the 2026-11-01 Freighter test.` (`successful: true`, satu operasi `invoke_host_function` ke kontrak di atas; argumen di-decode dari parameternya):
+
+| Waktu (UTC) | Ledger | Penanda tangan | Fungsi | Argumen | Fee (stroop) | Hash tx |
+|---|---|---|---|---|---|---|
+| 16:59:55 | 5505751 | B | `update_agent` | `B, "Uji 3b", "Manual test agent used for the 2026-11-01 Freighter test.", "", 20000000` | 51120 | `33312461fa1dd62db44e63486cc214f3281702a2b70dc61eb3308eb18d7fdcfb` |
+
+Nilai agen dan saldo B di tabel atas adalah keadaan sesudah uji manual, sebelum transaksi ini: deskripsi sekarang teks di atas (bukan `ete`), harga tetap 2 XLM, dan saldo B di atas belum dikurangi fee transaksi ini.
+
 **Belum teruji** (tidak ada transaksi atau tangkapan layar yang membuktikannya):
 - `refund_job` oleh klien setelah tenggat (§9 langkah 11–12).
 - `refund_job` oleh agen, saat Pending dan saat Delivered (§10 langkah 12–13).
