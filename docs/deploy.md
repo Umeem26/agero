@@ -339,3 +339,142 @@ Saldo cocok persis dengan transaksi di atas: A = 10000 − 2 − 0.0385719 (fee)
 - Tab basi / dua tab (§9 langkah 13, §10 langkah 5 dan 17).
 - Ganti akun aktif di Freighter (§9 langkah 14) dan jaringan salah (§9 langkah 3, §10 langkah 16).
 - RPC tidak valid (§9 langkah 2, §10 langkah 15), tombol Hire nonaktif untuk agen sendiri (§10 langkah 7), cek file klien "Match"/"No match" (§10 langkah 10), tampilan My Jobs/Incoming jobs dan countdown (§9 langkah 1 dan 7), konsol "Test API (sim)" (§9 langkah 15).
+
+## 12. Agen nyata (5a)
+
+Status: **kode dan tes unit selesai; uji e2e Testnet di bawah belum dijalankan.** Fase 5a hanya
+CLI lokal (`frontend/server/cli.mjs`), tanpa HTTP dan tanpa tanda tangan klien: operator yang
+menjalankannya menjamin kliennya (mode lokal tepercaya). Belum ada API, Upstash, atau UI (fase 5b/5c).
+
+Yang dikerjakan CLI untuk satu job: cek jaringan (passphrase Testnet di-hardcode dan dicek ke RPC),
+sakelar `AGERO_AGENT_ENABLED`, kunci agen dari `AGERO_AGENT_SECRET` harus pemilik agen terdaftar →
+`get_job` + `get_agent` + waktu ledger → `checkJob` (Pending, agen = kunci server, amount ≥ harga,
+sisa tenggat ≥ 300 s) → kunci per job → Contract Inspector (membaca WASM kontrak target lewat Soroban
+RPC; deterministik, tanpa AI) → hasil disimpan di `frontend/server/.data/agero-store.json` (diabaikan git)
+→ `deliver_job(job_id, SHA-256 hasil)`. Bila executor gagal, agen memanggil `refund_job`. Run ulang
+untuk job yang sama tidak menjalankan executor lagi dan tidak mengirim deliver kedua.
+
+### 12.1 Persiapan (sekali)
+
+```powershell
+# 1. Identity agen nyata (Q3: dibuat sendiri oleh Umem; bukan akun A/B dari bagian 11)
+stellar keys generate agero-real-agent
+
+# 2. Daftarkan agen "Contract Inspector", 1 XLM (friendbot otomatis bila akun belum ada; idempoten)
+.\scripts\register-real-agent.ps1 -ContractId CA5CMRJJHCJZIKVGFIOEV3BGVNTQVOI6KYV4S3GOROHUS7HLUUYLBDFB
+
+# 3. Klien sekali pakai untuk uji ini (bukan akun Freighter)
+$date = Get-Date -Format yyyyMMdd
+stellar keys generate "agero-e2e-$date"
+stellar keys fund "agero-e2e-$date" --network testnet
+```
+
+`register_agent` dikirim dengan `--api_url=` (kosong, belum ada endpoint publik). Bila stellar CLI
+menolak string kosong (tidak terverifikasi), jalankan ulang dengan
+`-ApiUrl https://example.invalid/agero-real-agent`.
+
+### 12.2 Env dalam sesi shell sendiri
+
+Jalankan di **satu** jendela PowerShell yang sama untuk semua langkah 12.2–12.4. Secret hanya masuk ke
+variabel; tidak dicetak, tidak ditulis ke berkas. Jangan jalankan `stellar keys secret` tanpa `$env:... =`.
+
+```powershell
+$C     = 'CA5CMRJJHCJZIKVGFIOEV3BGVNTQVOI6KYV4S3GOROHUS7HLUUYLBDFB'
+$AGENT = (stellar keys address agero-real-agent)
+$CLIENT = (stellar keys address "agero-e2e-$date")
+$env:AGERO_NETWORK       = 'testnet'
+$env:AGERO_CONTRACT_ID   = $C
+$env:AGERO_AGENT_ADDRESS = $AGENT
+$env:AGERO_AGENT_ENABLED = 'true'
+$env:AGERO_AGENT_SECRET  = (stellar keys secret agero-real-agent | Select-Object -Last 1).Trim()
+```
+
+### 12.3 Skenario 1: job Delivered, hash cocok
+
+```powershell
+# Job baru 1 XLM, tenggat 1 jam; output terakhir = job_id
+stellar contract invoke --id $C --source-account "agero-e2e-$date" --network testnet -- create_job --client $CLIENT --agent_owner $AGENT --amount 10000000 --duration_secs 3600
+$JOB = <job_id dari output di atas>
+
+Set-Content -Path job-input.json -Value "{`"contract_id`":`"$C`"}" -Encoding ascii
+node frontend/server/cli.mjs --job $JOB --input-file job-input.json --check
+node frontend/server/cli.mjs --job $JOB --input-file job-input.json --out "agero-job-$JOB.json"
+
+# Cocokkan: SHA-256 file hasil = result_hash di kontrak
+(Get-FileHash "agero-job-$JOB.json" -Algorithm SHA256).Hash.ToLower()
+stellar contract invoke --id $C --source-account "agero-e2e-$date" --network testnet --send=no -- get_job --job_id $JOB
+
+# Ulangi perintah cli yang sama: harus "stored outcome, nothing sent again", tanpa transaksi baru
+node frontend/server/cli.mjs --job $JOB --input-file job-input.json
+
+# Opsional: klien menyetujui (dana ke agen)
+stellar contract invoke --id $C --source-account "agero-e2e-$date" --network testnet -- complete_job --job_id $JOB
+```
+
+Isi hasil yang diharapkan: JSON satu baris dengan `wasm_sha256`
+`6e226ba57df163646848f1f7fcdc5a27629f60268ed8bf64025c9997d7093f46`, `wasm_bytes` 12400 dan 14 fungsi
+(sama dengan bagian 6), plus `job_id`, `agent`, `input_sha256` dan `read_at_ledger` job ini.
+
+### 12.4 Skenario 2: executor sengaja gagal → refund oleh agen
+
+Inputnya kontrak SAC XLM, yang tidak punya WASM, jadi Contract Inspector gagal permanen
+(`NOT_A_WASM_CONTRACT`) dan agen memanggil `refund_job` tanpa menunggu tenggat.
+
+```powershell
+stellar contract invoke --id $C --source-account "agero-e2e-$date" --network testnet -- create_job --client $CLIENT --agent_owner $AGENT --amount 10000000 --duration_secs 3600
+$JOB2 = <job_id baru>
+Set-Content -Path job-input-2.json -Value '{"contract_id":"CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"}' -Encoding ascii
+node frontend/server/cli.mjs --job $JOB2 --input-file job-input-2.json
+# Diharapkan: status refunded, error EXECUTOR_FAILED, refund_tx tercetak; get_job menunjukkan "status": 3
+stellar contract invoke --id $C --source-account "agero-e2e-$date" --network testnet --send=no -- get_job --job_id $JOB2
+```
+
+### 12.5 Sesudah uji
+
+```powershell
+Remove-Item Env:AGERO_AGENT_SECRET
+Remove-Item Env:AGERO_AGENT_ENABLED
+Remove-Item job-input.json, job-input-2.json, "agero-job-$JOB.json"
+```
+
+### 12.6 Checklist dan hasil
+
+| # | Langkah | Hasil |
+|---|---|---|
+| 1 | `register-real-agent.ps1` → `get_agent` = Contract Inspector, 1 XLM | Belum dijalankan |
+| 2 | `--check` lulus untuk job baru | Belum dijalankan |
+| 3 | Skenario 1: status `delivered`, `deliver_tx` sukses di Horizon | Belum dijalankan |
+| 4 | SHA-256 file hasil = `result_hash` dari `get_job` | Belum dijalankan |
+| 5 | Run ulang: tidak ada transaksi kedua | Belum dijalankan |
+| 6 | Skenario 2: `refund_job` oleh agen, `"status": 3`, saldo klien kembali minus fee | Belum dijalankan |
+| 7 | Tidak ada secret di output terminal | Belum dijalankan |
+
+Hash transaksi, ledger dan fee dicatat di sini setelah dijalankan, seperti bagian 11.
+
+## 13. Runbook reset Testnet 2026-12-16
+
+SDF me-reset Testnet pada 2026-12-16 (17:00 UTC, sumber di `docs/fase5-design.md` §20 [S17]). Sesudahnya
+kontrak v2, semua agen, job dan akun Testnet hilang. Identity di keystore stellar CLI lokal tetap ada
+(kuncinya lokal), tetapi akunnya harus didanai ulang; skrip melakukannya otomatis.
+
+1. **Pastikan reset sudah terjadi** (simulasi, tanpa transaksi). Bila kontrak lama tidak ditemukan, lanjut:
+   ```powershell
+   stellar contract invoke --id CA5CMRJJHCJZIKVGFIOEV3BGVNTQVOI6KYV4S3GOROHUS7HLUUYLBDFB --source-account agero-deployer --network testnet --send=no -- agent_count
+   ```
+2. **Bootstrap** (deploy → seed 11 agen → daftarkan agen nyata → cetak env). Deployer didanai dulu bila perlu:
+   ```powershell
+   stellar keys fund agero-deployer --network testnet
+   .\scripts\bootstrap-testnet.ps1 -Source agero-deployer -Fresh
+   ```
+   ID kontrak baru disimpan di `.agero-bootstrap.json` (diabaikan git). Bila skrip terputus, jalankan
+   ulang **tanpa** `-Fresh`: kontrak yang sama dipakai lagi, seed dan agen nyata dilewati bila sudah ada.
+3. **Terapkan env yang dicetak skrip:**
+   - `frontend/src/chain/config.js` `DEFAULTS.CONTRACT_ID` (dan `XLM_SAC` bila dicetak beda), alamat kontrak
+     di README, tabel bagian 6 dokumen ini (bagian baru dengan tanggal deploy).
+   - Vercel: `VITE_CONTRACT_ID` (dan `VITE_XLM_SAC` bila beda) di env Production + Preview, lalu redeploy
+     (nilai `VITE_*` dimasukkan saat build).
+   - CLI agen: `$env:AGERO_CONTRACT_ID` baru. Catatan store memakai ID kontrak di kuncinya, jadi catatan
+     lama tidak bentrok; `frontend/server/.data/agero-store.json` boleh dihapus.
+4. **Uji ulang:** `.\scripts\smoke-testnet.ps1` (bagian 4), lalu bagian 12 dengan job baru.
+5. **Akun Freighter** (A/B bagian 11) juga hilang: danai ulang lewat friendbot sebelum uji UI.
+6. Catat tanggal, ID kontrak baru dan hasil uji di dokumen ini; perbarui baris Status README.

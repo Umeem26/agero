@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Honesty gate: fails (exit 1) if overclaiming phrases appear in the UI source or README.
-# Usage: tool/honesty_gate.sh [path ...]   (defaults to frontend/src and README.md)
+# Usage: tool/honesty_gate.sh [path ...]   (defaults to frontend/src, frontend/server and README.md)
 set -euo pipefail
 
 BANNED_PHRASES=(
@@ -34,13 +34,26 @@ BANNED_PHRASES=(
   "live from the"
   "Holographic"
   "Liquid Glass"
+  # Phase 5a: the real agent is a deterministic Contract Inspector (no AI, no audit) and has not run on Testnet yet
+  "AI-powered"
+  "powered by AI"
+  "AI-generated"
+  "AI analysis"
+  "AI audit"
+  "security audit"
+  "audits your contract"
+  "verified contract"
+  "contract verified"
+  "real agent is live"
+  "runs on Agero"
+  "Agero executes"
 )
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [ "$#" -gt 0 ]; then
   TARGETS=("$@")
 else
-  TARGETS=("$ROOT/frontend/src" "$ROOT/README.md")
+  TARGETS=("$ROOT/frontend/src" "$ROOT/frontend/server" "$ROOT/README.md")
 fi
 
 fail=0
