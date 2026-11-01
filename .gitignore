@@ -32,3 +32,6 @@ npm-debug.log*
 
 # ── Build Artifacts ──
 *.wasm.d
+
+# ── Local state (scripts/bootstrap-testnet.ps1, frontend/server/cli.mjs) ──
+.agero-bootstrap.json
