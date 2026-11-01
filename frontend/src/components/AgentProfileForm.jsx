@@ -55,10 +55,10 @@ export default function AgentProfileForm({ mode, wallet, agent, runTx, onSaved, 
         <input id="agent-price" className="form-input" inputMode="decimal" value={form.priceXlm} onChange={set('priceXlm')} placeholder="e.g. 25" required />
         <div className="form-hint">Must be greater than 0. Clients lock at least this amount in escrow.{isUpdate && ' A new price applies to new jobs only.'}</div>
       </div>
-      <p className="form-hint" style={{ marginBottom: '14px' }}>Everything in this profile is public on Stellar Testnet. One agent per wallet address; agents cannot be deleted.</p>
+      <p className="form-hint form-hint-block">Everything in this profile is public on Stellar Testnet. One agent per wallet address; agents cannot be deleted.</p>
       {error && <p className="form-error" role="alert">{error}</p>}
-      <div style={{ display: 'flex', gap: '10px' }}>
-        <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>{isUpdate ? 'Sign update in Freighter' : 'Sign registration in Freighter'}</button>
+      <div className="btn-row">
+        <button type="submit" className="btn btn-primary btn-grow">{isUpdate ? 'Sign update in Freighter' : 'Sign registration in Freighter'}</button>
         {onCancel && <button type="button" className="btn btn-outline" onClick={onCancel}>Cancel</button>}
       </div>
     </form>

@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from 'react';
-import { X, Zap } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useDialog } from './Modal';
 
 // Simulated x402 playground. Not linked to the escrow: it sends a mock payment reference to the
@@ -61,68 +61,50 @@ export default function Playground({ job, onClose }) {
     }
   };
 
-  const colorFor = (log) => {
-    if (log.startsWith('[sim]')) return 'var(--amber)';
-    if (log.startsWith('[CLIENT]')) return 'var(--blue)';
-    if (log.startsWith('[HTTP]')) return 'var(--lavender)';
-    if (log.startsWith('[x402]')) return 'var(--amber)';
-    if (log.startsWith('[GATEWAY] API Response Error') || log.startsWith('[WARNING]')) return 'var(--red)';
-    if (log.startsWith('[GATEWAY]')) return 'var(--text)';
-    return 'var(--text-secondary)';
+  const toneFor = (log) => {
+    if (log.startsWith('[sim]') || log.startsWith('[x402]')) return 'log-sim';
+    if (log.startsWith('[GATEWAY] API Response Error') || log.startsWith('[WARNING]')) return 'log-error';
+    if (log.startsWith('[GATEWAY]')) return 'log-strong';
+    return '';
   };
 
   return (
     <div className="overlay" onClick={onClose}>
-      <div ref={panelRef} className="modal playground-modal" style={{ maxWidth: '780px', width: '90%' }} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div className="terminal-dots"><span className="dot dot-red" /><span className="dot dot-yellow" /><span className="dot dot-green" /></div>
-            <h3 id={titleId} className="modal-title" style={{ margin: 0, fontSize: '14px', fontFamily: 'monospace' }}>
-              x402_playground_console (simulated): ~/{job.agentName.toLowerCase().replace(/ /g, '_')}
-            </h3>
-          </div>
-          <button type="button" className="icon-btn" aria-label="Close" onClick={onClose}><X size={18} /></button>
+      <div ref={panelRef} className="modal modal-wide" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
+        <div className="modal-head">
+          <h2 id={titleId} className="modal-title">x402 playground [sim]: {job.agentName}</h2>
+          <button type="button" className="icon-btn" aria-label="Close" onClick={onClose}><X size={18} aria-hidden="true" /></button>
         </div>
-        <p className="sample-note">Simulated: no AI agent is called and no payment is checked. This console is not connected to the escrow contract.</p>
+        <p className="sample-note">Simulated: no agent is called and no payment is checked. This console is not connected to the escrow contract.</p>
 
         <div className="playground-grid">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="playground-form">
             <div>
-              <div className="form-label" style={{ fontFamily: 'monospace', fontSize: '11px' }}>HTTP ENDPOINT (local gateway demo)</div>
+              <div className="field-caption">HTTP endpoint (local gateway demo)</div>
               <div className="mono-box">POST http://{GATEWAY_URL}</div>
             </div>
             <div>
-              <div className="form-label" style={{ fontFamily: 'monospace', fontSize: '11px' }}>HEADER: X-Stellar-Payment-Tx (mock reference)</div>
-              <div className="mono-box" style={{ color: 'var(--color-brand-text)' }}>{MOCK_REFERENCE}</div>
+              <div className="field-caption">Header X-Stellar-Payment-Tx (mock reference)</div>
+              <div className="mono-box">{MOCK_REFERENCE}</div>
             </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label" htmlFor={inputId}>Input Text (AI Task)</label>
-              <textarea id={inputId} className="form-input" style={{ minHeight: '100px', fontSize: '13px', resize: 'none' }} value={input} onChange={(e) => setInput(e.target.value)} placeholder="Enter articles or long text to analyze/process..." />
+            <div className="form-group">
+              <label className="form-label" htmlFor={inputId}>Input text</label>
+              <textarea id={inputId} className="form-input" rows={5} value={input} onChange={(e) => setInput(e.target.value)} placeholder="Text to send to the local gateway demo" />
             </div>
-            <button className="btn btn-primary" style={{ width: '100%', fontFamily: 'monospace' }} onClick={execute} disabled={loading}>
-              {loading ? 'PROCESSING...' : 'EXECUTE TASK (SIMULATED X402)'}
+            <button className="btn btn-primary btn-block" onClick={execute} disabled={loading}>
+              {loading ? 'Running simulation…' : 'Run simulated x402 call'}
             </button>
           </div>
 
-          <div className="playground-console">
-            <div className="console-header">Console Output</div>
+          <div className="console" aria-live="polite">
+            <div className="console-header">Console output</div>
             <div className="console-body">
               {logs.length === 0 ? (
-                <div className="console-empty">
-                  <Zap size={20} className="glow-pulse" style={{ color: 'var(--text-dim)', marginBottom: '8px' }} />
-                  <span style={{ fontSize: '11px' }}>Console ready. Click Execute Task to run the simulation.</span>
-                </div>
+                <p className="console-empty">Ready. Run the simulated call to see the request and the simulated response.</p>
               ) : (
-                logs.map((log, i) => (
-                  <div key={i} style={{ color: colorFor(log), marginBottom: '6px', fontFamily: 'monospace', fontSize: '11px', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{log}</div>
-                ))
+                logs.map((log, i) => <div key={i} className={`console-line ${toneFor(log)}`}>{log}</div>)
               )}
-              {loading && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-brand-text)', marginTop: '8px', fontFamily: 'monospace', fontSize: '11px' }}>
-                  <span className="spinner" style={{ width: '12px', height: '12px', borderWidth: '1.5px', margin: 0 }} />
-                  <span>Waiting for API response...</span>
-                </div>
-              )}
+              {loading && <div className="console-line log-wait"><span className="spinner" aria-hidden="true" /> Waiting for the response…</div>}
             </div>
           </div>
         </div>

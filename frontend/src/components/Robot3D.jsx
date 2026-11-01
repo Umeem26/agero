@@ -1,22 +1,5 @@
 import { useEffect, useRef } from 'react';
 
-/* ── Logo SVG Component ── */
-export function AgeroLogo({ size = 28 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none">
-      {/* Hexagonal wire with inner node connections */}
-      <path d="M20 4 L34 12 L34 28 L20 36 L6 28 L6 12 Z" stroke="var(--accent)" strokeWidth="1.8" fill="none" />
-      <path d="M20 4 L20 36 M6 12 L34 28 M34 12 L6 28" stroke="var(--accent)" strokeWidth="0.8" opacity="0.4" />
-      <circle cx="20" cy="4" r="2.5" fill="var(--accent)" />
-      <circle cx="34" cy="12" r="2" fill="var(--text-dim)" />
-      <circle cx="34" cy="28" r="2" fill="var(--text-dim)" />
-      <circle cx="20" cy="36" r="2.5" fill="var(--rose)" />
-      <circle cx="6" cy="28" r="2" fill="var(--text-dim)" />
-      <circle cx="6" cy="12" r="2" fill="var(--text-dim)" />
-      <circle cx="20" cy="20" r="3.5" fill="var(--accent)" />
-    </svg>
-  );
-}
 export function Robot3D() {
   const canvasRef = useRef(null);
   const mouseRef = useRef({ x: 0, y: 0 });

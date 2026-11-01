@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, Clock, Info, RefreshCw, Shield, Zap } from 'lucide-react';
+import { AlertCircle, Clock, Info, RefreshCw } from 'lucide-react';
 import { MAX_JOB_SCAN, deliverJob, fetchAgent, fetchAgentJobs, refundJob, releaseJob } from '../chain/rpc';
 import { friendlyError } from '../chain/errors';
-import { HOUR_SECS, JobStatus, REVIEW_WINDOW_SECS, agentActions, agentEarnings, formatDuration, reviewEndsAt } from '../chain/jobs';
+import { HOUR_SECS, JobStatus, REVIEW_WINDOW_SECS, agentActions, agentEarnings, reviewEndsAt } from '../chain/jobs';
 import { profileActions } from '../chain/profile';
 import { stroopsToXlm } from '../chain/units';
 import { CONFIG, explorerAccountUrl, explorerContractUrl } from '../chain/config';
 import { shortAddress } from '../agents';
-import { ErrorState, ExplorerLink } from './ui';
-import { HashSource, JobListSkeleton, JobProgress, StatusBadge } from './jobUi';
+import { ConnectPrompt, EmptyState, ErrorState, ExplorerLink, KeyValueList, StatCard } from './ui';
+import { HashSource, JobCard, JobListSkeleton } from './jobUi';
 import { toDate, useLedgerNow } from './ledgerTime';
 import AgentProfileForm from './AgentProfileForm';
 import Modal from './Modal';
@@ -17,8 +17,8 @@ const REVIEW_HOURS = REVIEW_WINDOW_SECS / HOUR_SECS;
 
 function OffAppNotice() {
   return (
-    <div className="card notice-card">
-      <Info size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+    <div className="notice">
+      <Info size={16} aria-hidden="true" />
       <span>
         <strong>Agero does not run your agent.</strong> You do the work outside this app and send the result to the client through your own channel.
         The contract records only a SHA-256 hash of the result when you deliver, plus the escrow payment. Nothing else about the work is checked.
@@ -27,22 +27,21 @@ function OffAppNotice() {
   );
 }
 
-// Agent-side view of the deadline and review window
+// Agent-side explanation next to the deadline / review meter
 function AgentTimeInfo({ job, now }) {
   if (now == null) return null;
   if (job.status === JobStatus.PENDING) {
     return now <= job.deadline
-      ? <span>Deadline in {formatDuration(job.deadline - now)} ({toDate(job.deadline)}). After it passes the client can refund.</span>
-      : <span>Deadline passed {formatDuration(now - job.deadline)} ago. You can still deliver until the client refunds; whichever transaction lands first wins.</span>;
+      ? `Deliver before ${toDate(job.deadline)}. After that the client can refund.`
+      : 'Deadline passed. You can still deliver until the client refunds; whichever transaction lands first wins.';
   }
   if (job.status === JobStatus.DELIVERED) {
-    const end = reviewEndsAt(job);
-    return now < end
-      ? <span>Delivered. Client review window: {formatDuration(end - now)} left ({toDate(end)}). After that anyone, including you, can release the payment.</span>
-      : <span>Review window ended. You can release the payment to your wallet now.</span>;
+    return now < reviewEndsAt(job)
+      ? `Delivered. The client can approve until ${toDate(reviewEndsAt(job))}; after that anyone, including you, can release the payment.`
+      : 'Review window ended. You can release the payment to your wallet now.';
   }
-  if (job.status === JobStatus.COMPLETED) return <span>Paid to your wallet.</span>;
-  return <span>Refunded to the client.</span>;
+  if (job.status === JobStatus.COMPLETED) return 'Paid to your wallet.';
+  return 'Refunded to the client.';
 }
 
 // Pick file / text / hash -> SHA-256 shown -> owner confirms -> deliver_job
@@ -53,17 +52,17 @@ function DeliverModal({ job, now, onSubmit, onClose }) {
   const late = now != null && now > job.deadline;
   return (
     <Modal title={`Deliver job #${job.id}`} onClose={onClose}>
-      <div className="notice-card notice-inline">
-        <AlertCircle size={15} style={{ flexShrink: 0, marginTop: '2px' }} />
+      <div className="notice notice-inline">
+        <AlertCircle size={16} aria-hidden="true" />
         <span>The result itself is not stored in Agero or on the blockchain; only its hash is. Send the result to the client through your own channel.</span>
       </div>
-      {late && <p className="form-hint" style={{ marginBottom: '12px' }}>The deadline has passed. Delivery is still accepted unless the client refunds first.</p>}
+      {late && <p className="form-hint">The deadline has passed. Delivery is still accepted unless the client refunds first.</p>}
       <HashSource sources={['file', 'text', 'hash']} idPrefix={`deliver-${job.id}`} onHash={onHash} />
       <label className="check-row">
         <input type="checkbox" checked={confirmed} disabled={!hash} onChange={(e) => setConfirmed(e.target.checked)} />
         <span>This hash matches the exact file or text I am sending to the client. Delivering cannot be undone; the client then has {REVIEW_HOURS} h to approve.</span>
       </label>
-      <button className="btn btn-primary" style={{ width: '100%' }} disabled={!hash || !confirmed} onClick={() => onSubmit(hash)}>Sign deliver_job in Freighter</button>
+      <button className="btn btn-primary btn-block" disabled={!hash || !confirmed} onClick={() => onSubmit(hash)}>Sign deliver_job in Freighter</button>
     </Modal>
   );
 }
@@ -76,8 +75,8 @@ function RefundConfirm({ job, onConfirm, onClose }) {
         <li>This cannot be undone. The job ends as Refunded and you will not be paid for it{job.status === JobStatus.DELIVERED ? ', even though you already delivered' : ''}.</li>
         <li>You pay the network fee for this transaction.</li>
       </ul>
-      <div style={{ display: 'flex', gap: '10px' }}>
-        <button className="btn btn-red" style={{ flex: 1 }} onClick={onConfirm}>Refund in Freighter</button>
+      <div className="btn-row">
+        <button className="btn btn-danger btn-grow" onClick={onConfirm}>Refund in Freighter</button>
         <button className="btn btn-outline" onClick={onClose}>Cancel</button>
       </div>
     </Modal>
@@ -136,19 +135,13 @@ export default function AgentDashboard({ wallet, runTx, onConnect, onChanged, on
     return (
       <>
         <OffAppNotice />
-        <div className="card empty-state">
-          <div className="empty-icon"><Shield size={24} /></div>
-          <p style={{ color: 'var(--text-dim)', marginBottom: '16px' }}>Connect Freighter (Testnet) with the wallet that owns, or will own, your agent.</p>
-          <button className="btn btn-primary" onClick={onConnect}>Connect Freighter</button>
-        </div>
+        <ConnectPrompt onConnect={onConnect}>Connect Freighter (Testnet) with the wallet that owns, or will own, your agent.</ConnectPrompt>
       </>
     );
   }
 
   if (state.status === 'error') return <><OffAppNotice /><ErrorState message={state.error} onRetry={load} /></>;
-  if (state.status !== 'ready' && !state.agent) {
-    return <><OffAppNotice /><div className="card" style={{ padding: '24px' }}><div className="skeleton" style={{ height: '18px', width: '40%', marginBottom: '12px' }} /><div className="skeleton" style={{ height: '12px', width: '70%' }} /></div></>;
-  }
+  if (state.status !== 'ready' && !state.agent) return <><OffAppNotice /><JobListSkeleton /></>;
 
   const { agent } = state;
   const can = profileActions(agent, wallet);
@@ -159,26 +152,26 @@ export default function AgentDashboard({ wallet, runTx, onConnect, onChanged, on
     <>
       <OffAppNotice />
 
-      <div className="card dev-form-card" style={{ marginBottom: '24px' }}>
-        <h3 className="card-heading"><Zap size={18} style={{ color: 'var(--color-brand-text)' }} /> {can.register ? 'Register your agent' : 'Your agent'}</h3>
+      <section className="card card-pad section-gap">
+        <h2 className="card-heading">{can.register ? 'Register your agent' : 'Your agent'}</h2>
         {can.register && (
           <>
-            <p style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '18px' }}>No agent is registered for {shortAddress(wallet)} on contract <ExplorerLink href={explorerContractUrl()}>{shortAddress(CONFIG.contractId)}</ExplorerLink>. Registering lists it in the marketplace.</p>
+            <p className="card-lead">No agent is registered for {shortAddress(wallet)} on contract <ExplorerLink href={explorerContractUrl()}>{shortAddress(CONFIG.contractId)}</ExplorerLink>. Registering lists it in the marketplace.</p>
             <AgentProfileForm mode="register" wallet={wallet} runTx={runTx} onSaved={() => { load(); onChanged(); }} onAlreadyRegistered={load} />
           </>
         )}
         {can.update && !editing && (
           <>
-            <div className="drawer-info">
-              <div className="drawer-row"><span className="drawer-row-label">Name</span><span className="drawer-row-val">{agent.name}</span></div>
-              <div className="drawer-row"><span className="drawer-row-label">Price</span><span className="drawer-row-val">{stroopsToXlm(agent.price)} XLM</span></div>
-              <div className="drawer-row"><span className="drawer-row-label">Completed jobs</span><span className="drawer-row-val">{agent.totalJobs}</span></div>
-              <div className="drawer-row"><span className="drawer-row-label">Rating</span><span className="drawer-row-val">{agent.ratingCount > 0 ? `${(Number(agent.ratingSum) / agent.ratingCount).toFixed(1)} (${agent.ratingCount})` : 'none yet'}</span></div>
-            </div>
-            {agent.description && <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 12px' }}>{agent.description}</p>}
+            <KeyValueList items={[
+              ['Name', agent.name],
+              ['Price', `${stroopsToXlm(agent.price)} XLM`],
+              ['Completed jobs', agent.totalJobs],
+              ['Rating', agent.ratingCount > 0 ? `${(Number(agent.ratingSum) / agent.ratingCount).toFixed(1)} (${agent.ratingCount})` : 'none yet'],
+            ]} />
+            {agent.description && <p className="card-lead">{agent.description}</p>}
             <div className="field-caption">API URL (label only, never called by Agero)</div>
-            <div className="mono-box" style={{ marginBottom: '18px' }}>{agent.apiUrl || '(none)'}</div>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <div className="mono-box">{agent.apiUrl || '(none)'}</div>
+            <div className="btn-row">
               <button className="btn btn-outline" onClick={() => setEditing(true)}>Edit profile</button>
               <button className="btn btn-outline" onClick={onBrowse}>View in marketplace</button>
             </div>
@@ -187,67 +180,47 @@ export default function AgentDashboard({ wallet, runTx, onConnect, onChanged, on
         {can.update && editing && (
           <AgentProfileForm mode="update" wallet={wallet} agent={agent} runTx={runTx} onSaved={() => { setEditing(false); load(); onChanged(); }} onCancel={() => setEditing(false)} />
         )}
-      </div>
+      </section>
 
       {agent && (
         <>
           <div className="stat-row">
-            <div className="card stat-card green-stat">
-              <div className="stat-label">Paid to you</div>
-              <div className="stat-val" style={{ color: 'var(--green)' }}>{stroopsToXlm(earnings.paid)} <span className="stat-unit">XLM</span></div>
-            </div>
-            <div className="card stat-card blue">
-              <div className="stat-label">Delivered, awaiting payment</div>
-              <div className="stat-val">{stroopsToXlm(earnings.awaitingRelease)} <span className="stat-unit">XLM</span></div>
-            </div>
-            <div className="card stat-card rose">
-              <div className="stat-label">Pending, not delivered</div>
-              <div className="stat-val" style={{ color: 'var(--rose)' }}>{stroopsToXlm(earnings.pending)} <span className="stat-unit">XLM</span></div>
-            </div>
+            <StatCard label="Paid to you" value={stroopsToXlm(earnings.paid)} unit="XLM" />
+            <StatCard label="Delivered, awaiting payment" value={stroopsToXlm(earnings.awaitingRelease)} unit="XLM" />
+            <StatCard label="Pending, not delivered" value={stroopsToXlm(earnings.pending)} unit="XLM" />
           </div>
-          <p className="form-hint" style={{ margin: '-8px 0 20px' }}>Totals are sums of job amounts found by scanning the contract ({scanNote}): Completed jobs (approved or released), Delivered and Pending. Network fees are not included.</p>
+          <p className="form-hint stat-note">Totals are sums of job amounts found by scanning the contract ({scanNote}): Completed jobs (approved or released), Delivered and Pending. Network fees are not included.</p>
 
           <div className="list-toolbar">
-            <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)' }}>Incoming jobs</span>
-            <button className="btn btn-outline" onClick={load} disabled={state.status === 'loading'}><RefreshCw size={14} /> Refresh</button>
+            <h2 className="toolbar-title">Incoming jobs</h2>
+            <button className="btn btn-outline" onClick={load} disabled={state.status === 'loading'}><RefreshCw size={14} aria-hidden="true" /> Refresh</button>
           </div>
 
           {state.status === 'loading' && state.jobs.length === 0 && <JobListSkeleton />}
           {state.status === 'ready' && state.jobs.length === 0 && (
-            <div className="card empty-state">
-              <div className="empty-icon"><Clock size={24} /></div>
-              <p style={{ color: 'var(--text-dim)' }}>No jobs for your agent in the newest {state.scanned} jobs on the contract.</p>
-            </div>
+            <EmptyState icon={Clock}>No jobs for your agent in the newest {state.scanned} jobs on the contract.</EmptyState>
           )}
 
           {state.jobs.length > 0 && (
-            <div className="escrow-list">
+            <div className="job-list">
               {state.jobs.map((job) => {
                 const actions = agentActions(job, wallet, now ?? 0n);
                 return (
-                  <div key={String(job.id)} className="card escrow-card">
-                    <JobProgress status={job.status} />
-                    <div className="escrow-body">
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                          <span className="escrow-title">Job #{String(job.id)}</span>
-                          <StatusBadge status={job.status} />
-                        </div>
-                        <div className="escrow-meta">
-                          <span>Client: <ExplorerLink href={explorerAccountUrl(job.client)}>{shortAddress(job.client)}</ExplorerLink></span>
-                          <span>{stroopsToXlm(job.amount)} XLM</span>
-                          <span>Created {toDate(job.createdAt)}</span>
-                        </div>
-                        <div className="escrow-time"><AgentTimeInfo job={job} now={now} /></div>
-                        {job.resultHash && <div className="escrow-hash">Result hash (SHA-256): <code>{job.resultHash}</code></div>}
-                      </div>
-                      <div className="escrow-actions">
+                  <JobCard
+                    key={String(job.id)}
+                    job={job}
+                    now={now}
+                    party={{ label: 'Client', name: shortAddress(job.client), href: explorerAccountUrl(job.client) }}
+                    actions={(
+                      <>
                         {actions.deliver && <button className="btn btn-primary" onClick={() => setDeliverFor(job)}>Deliver</button>}
-                        {actions.release && <button className="btn btn-green" onClick={() => handleRelease(job)}>Release payment</button>}
-                        {actions.refund && <button className="btn btn-red" onClick={() => setRefundFor(job)}>Refund client</button>}
-                      </div>
-                    </div>
-                  </div>
+                        {actions.release && <button className="btn btn-primary" onClick={() => handleRelease(job)}>Release payment</button>}
+                        {actions.refund && <button className="btn btn-danger" onClick={() => setRefundFor(job)}>Refund client</button>}
+                      </>
+                    )}
+                  >
+                    <AgentTimeInfo job={job} now={now} />
+                  </JobCard>
                 );
               })}
             </div>

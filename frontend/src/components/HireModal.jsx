@@ -3,6 +3,8 @@ import { createJob, fetchXlmBalance } from '../chain/rpc';
 import { friendlyError } from '../chain/errors';
 import { MAX_DURATION_HOURS, MIN_DURATION_HOURS, REVIEW_WINDOW_SECS, HOUR_SECS, parseHireInput } from '../chain/jobs';
 import { stroopsToXlm } from '../chain/units';
+import { KeyValueList } from './ui';
+import DeadlineMeter from './DeadlineMeter';
 import Modal from './Modal';
 
 const DEFAULT_HOURS = '24';
@@ -54,14 +56,12 @@ export default function HireModal({ agent, wallet, onConnect, onClose, runTx, on
 
         {!wallet ? (
           <>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>Connect Freighter (Testnet) to lock XLM in the escrow contract.</p>
-            <button className="btn btn-primary" style={{ width: '100%' }} onClick={onConnect}>Connect Freighter</button>
+            <p className="modal-lead">Connect Freighter (Testnet) to lock XLM in the escrow contract.</p>
+            <button className="btn btn-primary btn-block" onClick={onConnect}>Connect Freighter</button>
           </>
         ) : !review ? (
           <form onSubmit={handleReview}>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-              Agent price: <strong style={{ color: 'var(--text)' }}>{stroopsToXlm(agent.price)} XLM</strong> (Testnet XLM)
-            </p>
+            <p className="modal-lead">Agent price: <strong>{stroopsToXlm(agent.price)} XLM</strong> (Testnet XLM)</p>
             <div className="form-group">
               <label className="form-label" htmlFor="hire-amount">Escrow amount (XLM)</label>
               <input id="hire-amount" data-autofocus className="form-input" inputMode="decimal" value={amountXlm} onChange={(e) => setAmountXlm(e.target.value)} required />
@@ -77,25 +77,26 @@ export default function HireModal({ agent, wallet, onConnect, onClose, runTx, on
               <div className="form-hint">{MIN_DURATION_HOURS} to {MAX_DURATION_HOURS} hours (30 days). If nothing is delivered by then, you can refund.</div>
             </div>
             {error && <p className="form-error" role="alert">{error}</p>}
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>Review</button>
+            <button type="submit" className="btn btn-primary btn-block">Review</button>
           </form>
         ) : (
           <>
-            <div className="drawer-info">
-              <div className="drawer-row"><span className="drawer-row-label">Agent</span><span className="drawer-row-val">{agent.name}</span></div>
-              <div className="drawer-row"><span className="drawer-row-label">Amount locked</span><span className="drawer-row-val">{stroopsToXlm(review.amount)} XLM</span></div>
-              <div className="drawer-row"><span className="drawer-row-label">Deadline (approx.)</span><span className="drawer-row-val">{review.deadlineDate.toLocaleString()}</span></div>
-              <div className="drawer-row"><span className="drawer-row-label">Review window</span><span className="drawer-row-val">{REVIEW_WINDOW_SECS / HOUR_SECS} h after delivery</span></div>
-              <div className="drawer-row"><span className="drawer-row-label">Network</span><span className="drawer-row-val">Stellar Testnet</span></div>
-            </div>
+            <KeyValueList items={[
+              ['Agent', agent.name],
+              ['Amount locked', `${stroopsToXlm(review.amount)} XLM`],
+              ['Deadline (approx.)', review.deadlineDate.toLocaleString()],
+              ['Review window', `${REVIEW_WINDOW_SECS / HOUR_SECS} h after delivery`],
+              ['Network', 'Stellar Testnet'],
+            ]} />
+            <DeadlineMeter label="Deadline once signed" start={0n} end={review.durationSecs} now={0n} note="The clock starts at the ledger time of the create_job transaction." />
             <ul className="review-notes">
               <li>The XLM moves from your wallet to the escrow contract when the transaction is confirmed. Freighter shows the network fee before you sign.</li>
               <li>After the agent delivers, you have {REVIEW_WINDOW_SECS / HOUR_SECS} hours to approve. After that anyone can release the payment to the agent. There is no arbiter.</li>
               <li>If nothing is delivered by the deadline, you can refund. The deadline is final once the job is created.</li>
-              <li>The agent's work itself is not performed by this prototype (simulated).</li>
+              <li>The agent's work happens outside Agero. The contract records only a SHA-256 hash of the result when the agent delivers.</li>
             </ul>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleConfirm}>Sign in Freighter</button>
+            <div className="btn-row">
+              <button className="btn btn-primary btn-grow" onClick={handleConfirm}>Sign in Freighter</button>
               <button className="btn btn-outline" onClick={() => setReview(null)}>Back</button>
             </div>
           </>

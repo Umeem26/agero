@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CheckCircle, AlertCircle, X, ChevronDown, ArrowLeft, Shield, Zap, Users, Menu } from 'lucide-react';
+import { CheckCircle, AlertCircle, X, ChevronDown, ArrowLeft, Users, Menu } from 'lucide-react';
 import { CONFIG, CONFIG_ERROR, explorerAccountUrl, explorerContractUrl } from './chain/config';
 import { connectFreighter } from './chain/wallet';
 import { fetchAgents, fetchJobCount } from './chain/rpc';
@@ -7,8 +7,10 @@ import { friendlyError } from './chain/errors';
 import { REVIEW_WINDOW_SECS, HOUR_SECS } from './chain/jobs';
 import { stroopsToXlm } from './chain/units';
 import { presentAgent, shortAddress } from './agents';
-import { AgeroLogo, Robot3D } from './components/Robot3D';
-import { Stars, SampleBadge, ExplorerLink, ErrorState, SkeletonCards } from './components/ui';
+import { Robot3D } from './components/Robot3D';
+import AgeroLogo from './components/AgeroLogo';
+import { Stars, SampleBadge, ContractMark, ExplorerLink, EmptyState, ErrorState, KeyValueList, SkeletonCards, StatCard } from './components/ui';
+import AgentCard from './components/AgentCard';
 import HireModal from './components/HireModal';
 import MyJobs from './components/MyJobs';
 import AgentDashboard from './components/AgentDashboard';
@@ -24,47 +26,12 @@ const PAGES = [
 ];
 const REVIEW_HOURS = REVIEW_WINDOW_SECS / HOUR_SECS;
 
-function AgentCard({ agent, onOpen }) {
-  return (
-    <div className="card agent-card">
-      {agent.image && (
-        <div className="agent-card-img-wrapper" style={{ height: '140px', overflow: 'hidden', borderBottom: '1px solid var(--border)' }}>
-          <img src={agent.image} alt={`${agent.name} (static sample image)`} width={768} height={768} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        </div>
-      )}
-      <div style={{ padding: '20px' }}>
-        <div className="agent-top-row">
-          <h3 className="agent-name"><CardLink onOpen={onOpen}>{agent.name}</CardLink></h3>
-          <span className="agent-category">{agent.category}</span>
-        </div>
-        {agent.isSample && <SampleBadge style={{ marginBottom: '8px' }} />}
-        <p className="agent-desc">{agent.summary}</p>
-        <div className="agent-bottom">
-          <div className="agent-price">{stroopsToXlm(agent.price)}<span className="agent-price-unit">XLM</span></div>
-          <Stars average={agent.averageRating} count={agent.ratingCount} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// The agent name is the card's real control (keyboard: Tab, Enter/Space); .card-link stretches
-// its click area over the whole card
-function CardLink({ onOpen, children }) {
-  return <button type="button" className="card-link" onClick={onOpen}>{children}</button>;
-}
-
 // Loading / error / empty states for anything that lists registry agents
 function RegistryState({ registry, onRetry, children }) {
   if (registry.status === 'loading') return <SkeletonCards count={3} />;
   if (registry.status === 'error') return <ErrorState message={registry.error} onRetry={onRetry} />;
   if (registry.agents.length === 0) {
-    return (
-      <div className="card empty-state">
-        <div className="empty-icon"><Users size={24} /></div>
-        <p style={{ color: 'var(--text-dim)' }}>No agents are registered on the contract yet.</p>
-      </div>
-    );
+    return <EmptyState icon={Users}>No agents are registered on the contract yet.</EmptyState>;
   }
   return children;
 }
@@ -121,12 +88,15 @@ export default function App() {
   const detailAgent = detailOwner ? agentsByOwner.get(detailOwner) : null;
   const categories = useMemo(() => ['All', ...new Set(registry.agents.map((a) => a.category))], [registry.agents]);
   const filtered = selectedCategory === 'All' ? registry.agents : registry.agents.filter((a) => a.category === selectedCategory);
-  const featured = (registry.agents.some((a) => a.image) ? registry.agents.filter((a) => a.image) : registry.agents).slice(0, 3);
+  const featured = registry.agents.slice(0, 3);
   const ownAgent = wallet ? agentsByOwner.get(wallet) : null;
+  // Keep the last numbers on screen while refreshing
+  const hasRegistry = registry.status === 'ready' || registry.status === 'refreshing';
 
+  // Success toasts close themselves; errors stay until dismissed
   const notify = (message, type = 'success') => {
     setNotification({ message, type });
-    setTimeout(() => setNotification(null), type === 'error' ? 6000 : 3500);
+    if (type !== 'error') setTimeout(() => setNotification((n) => (n?.message === message ? null : n)), 3500);
   };
 
   const go = (page) => { setActivePage(page); setDetailOwner(null); setMenuOpen(false); };
@@ -169,35 +139,29 @@ export default function App() {
   };
 
   return (
-    <div>
-      <div className="bg-atmosphere">
-        <div className="bg-blob bg-blob-1" />
-        <div className="bg-blob bg-blob-2" />
-        <div className="bg-blob bg-blob-3" />
-      </div>
-
       <div className="app-root">
         {notification && (
-          <div className={`notif ${notification.type === 'error' ? 'notif-error' : 'notif-success'}`} role="status">
-            {notification.type === 'error' ? <AlertCircle size={15} /> : <CheckCircle size={15} />}
-            {notification.message}
+          <div className={`notif ${notification.type === 'error' ? 'notif-error' : 'notif-success'}`} role={notification.type === 'error' ? 'alert' : 'status'}>
+            {notification.type === 'error' ? <AlertCircle size={16} aria-hidden="true" /> : <CheckCircle size={16} aria-hidden="true" />}
+            <span>{notification.message}</span>
+            {notification.type === 'error' && <button type="button" className="icon-btn" aria-label="Dismiss" onClick={() => setNotification(null)}><X size={16} aria-hidden="true" /></button>}
           </div>
         )}
 
         {/* ── Prototype banner: what is real and what is simulated ── */}
         {CONFIG_ERROR && (
-          <div className="sim-banner" role="alert"><div className="container sim-banner-inner"><AlertCircle size={15} style={{ flexShrink: 0 }} /><span>Configuration error: {CONFIG_ERROR}</span></div></div>
+          <div className="sim-banner" role="alert"><div className="container sim-banner-inner"><AlertCircle size={16} aria-hidden="true" /><span>Configuration error: {CONFIG_ERROR}</span></div></div>
         )}
         {showBanner && (
           <div className="sim-banner" role="status">
             <div className="container sim-banner-inner">
-              <AlertCircle size={15} style={{ flexShrink: 0 }} />
+              <AlertCircle size={16} aria-hidden="true" />
               <span>
                 Testnet prototype. <strong>Read from Stellar Testnet:</strong> agent registry, ratings and jobs.{' '}
                 <strong>Implemented, manual Freighter test pending:</strong> signed writes for agent profiles, XLM escrow (create, deliver, approve, release, refund) and star ratings.{' '}
                 <strong>Outside Agero:</strong> the agents' work; only a hash of each result is recorded. <strong>Simulated:</strong> the x402 payment playground.
               </span>
-              <button className="sim-banner-close" aria-label="Dismiss notice" onClick={() => setShowBanner(false)}><X size={14} /></button>
+              <button className="icon-btn sim-banner-close" aria-label="Dismiss notice" onClick={() => setShowBanner(false)}><X size={16} aria-hidden="true" /></button>
             </div>
           </div>
         )}
@@ -232,8 +196,8 @@ export default function App() {
 
             <div className="wallet-wrapper" ref={walletRef}>
               <button ref={walletBtnRef} className={`wallet-btn ${wallet ? 'connected' : ''}`} aria-expanded={walletOpen} aria-controls="wallet-dropdown" onClick={() => setWalletOpen(!walletOpen)}>
-                {wallet ? (<><div className="wallet-dot" />{shortAddress(wallet)}</>) : 'Connect Wallet'}
-                <ChevronDown size={13} className="wallet-chevron" style={{ opacity: 0.4, transform: walletOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                {wallet ? (<><span className="wallet-dot" aria-hidden="true" />{shortAddress(wallet)}</>) : 'Connect Freighter'}
+                <ChevronDown size={14} aria-hidden="true" className={`wallet-chevron ${walletOpen ? 'open' : ''}`} />
               </button>
               {walletOpen && (
                 <div className="wallet-dropdown" id="wallet-dropdown">
@@ -243,7 +207,7 @@ export default function App() {
                       <div className="dropdown-label">Address</div>
                       <div className="dropdown-addr">{wallet}</div>
                       <div className="dropdown-note"><ExplorerLink href={explorerAccountUrl(wallet)}>View account</ExplorerLink> · Transactions are signed in Freighter and sent to Testnet.</div>
-                      <button className="dropdown-action dropdown-disconnect" onClick={handleDisconnect}>Disconnect Wallet</button>
+                      <button className="dropdown-action dropdown-disconnect" onClick={handleDisconnect}>Disconnect</button>
                     </>
                   ) : (
                     <button className="dropdown-action dropdown-connect" onClick={handleConnect} disabled={connecting}>{connecting ? 'Waiting for Freighter…' : 'Connect Freighter'}</button>
@@ -259,20 +223,19 @@ export default function App() {
             /* ═══ AGENT DETAIL ═══ */
             <div className="page-view">
               <button className="detail-back" onClick={() => setDetailOwner(null)}>
-                <ArrowLeft size={16} /> Back to Marketplace
+                <ArrowLeft size={16} aria-hidden="true" /> Back to Marketplace
               </button>
 
               {!detailAgent ? (
                 <RegistryState registry={registry} onRetry={loadRegistry}>
-                  <p style={{ color: 'var(--text-dim)' }}>This agent is not in the registry.</p>
+                  <EmptyState>This agent is not in the registry.</EmptyState>
                 </RegistryState>
               ) : (
                 <div className="detail-layout">
-                  <div className="card detail-main">
+                  <section className="card card-pad detail-main">
                     <div className="detail-meta">
-                      <span className="detail-tag" style={{ background: 'var(--accent-soft)', color: 'var(--color-brand-text)' }}>{detailAgent.category}</span>
                       {detailAgent.isSample && <SampleBadge />}
-                      <Stars average={detailAgent.averageRating} count={detailAgent.ratingCount} size={15} />
+                      <span className="src-ui" title="Category is set in this frontend; the contract does not store it">{detailAgent.category}</span>
                     </div>
                     <h1 className="detail-name">{detailAgent.name}</h1>
                     <p className="detail-desc">{detailAgent.summary}</p>
@@ -280,58 +243,42 @@ export default function App() {
                       <p className="sample-note">Sample agent registered by the project's seed script. Its endpoint is a placeholder with no live service, the image is a static sample, and no AI work is performed. The description is illustrative text kept in this frontend; the contract still stores the original seed text. Price, rating and job count are read from the contract.</p>
                     )}
 
-                    <div className="detail-info-grid">
-                      <div className="detail-info-item">
-                        <div className="detail-info-label">Price</div>
-                        <div className="detail-info-val" style={{ color: 'var(--color-brand-text)' }}>{stroopsToXlm(detailAgent.price)} <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-dim)' }}>XLM</span></div>
-                      </div>
-                      <div className="detail-info-item">
-                        <div className="detail-info-label">Completed jobs</div>
-                        <div className="detail-info-val">{detailAgent.totalJobs}</div>
-                      </div>
-                      <div className="detail-info-item">
-                        <div className="detail-info-label">Ratings</div>
-                        <div className="detail-info-val">{detailAgent.ratingCount}</div>
-                      </div>
-                      <div className="detail-info-item">
-                        <div className="detail-info-label">Review window</div>
-                        <div className="detail-info-val">{REVIEW_HOURS} h</div>
-                      </div>
+                    <div className="stat-row stat-row-4">
+                      <StatCard label="Price" value={stroopsToXlm(detailAgent.price)} unit="XLM" mark={<ContractMark />} />
+                      <StatCard label="Completed jobs" value={detailAgent.totalJobs} mark={<ContractMark />} />
+                      <StatCard label="Ratings" value={detailAgent.ratingCount} mark={<ContractMark />} />
+                      <StatCard label="Review window" value={REVIEW_HOURS} unit="h" mark={<ContractMark />} />
                     </div>
 
-                    <div style={{ marginBottom: '24px' }}>
-                      <div className="field-caption">API endpoint (stored in the contract; not called by this UI)</div>
-                      <div className="mono-box">{detailAgent.apiUrl}</div>
-                    </div>
+                    <div className="field-caption">API endpoint (stored in the contract; not called by this UI)</div>
+                    <div className="mono-box">{detailAgent.apiUrl}</div>
 
                     {detailAgent.image && (
-                      <div style={{ marginBottom: '24px' }}>
-                        <div className="field-caption">Sample image (static, not agent output)</div>
-                        <div style={{ overflow: 'hidden', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                          <img src={detailAgent.image} alt={`${detailAgent.name} static sample image`} width={768} height={768} decoding="async" style={{ width: '100%', height: 'auto', display: 'block', maxHeight: '300px', objectFit: 'cover' }} />
-                        </div>
-                      </div>
+                      <figure className="detail-figure">
+                        <figcaption className="field-caption">Sample image (static, not agent output)</figcaption>
+                        <img src={detailAgent.image} alt={`${detailAgent.name} static sample image`} width={768} height={768} decoding="async" />
+                      </figure>
                     )}
 
                     <div className="detail-footer">
-                      <span style={{ fontSize: '13px', color: 'var(--text-dim)', wordBreak: 'break-all' }}>Owner: <ExplorerLink href={explorerAccountUrl(detailAgent.owner)}>{detailAgent.owner}</ExplorerLink></span>
-                      <button className="btn btn-primary" onClick={() => setShowHire(true)} disabled={wallet === detailAgent.owner} title={wallet === detailAgent.owner ? 'You cannot hire your own agent' : undefined}>Hire Agent</button>
+                      <span className="detail-owner">Owner: <ExplorerLink href={explorerAccountUrl(detailAgent.owner)}>{detailAgent.owner}</ExplorerLink></span>
+                      <button className="btn btn-primary" onClick={() => setShowHire(true)} disabled={wallet === detailAgent.owner} title={wallet === detailAgent.owner ? 'You cannot hire your own agent' : undefined}>Hire agent</button>
                     </div>
                     {wallet === detailAgent.owner && (
-                      <p className="form-hint" style={{ marginTop: '12px' }}>
+                      <p className="form-hint">
                         This is your agent, so hiring is disabled: the contract rejects a job where client and agent are the same address.{' '}
                         <button type="button" className="link-btn" onClick={() => go('agent')}>Open the Agent dashboard</button> to manage it.
                       </p>
                     )}
-                  </div>
+                  </section>
 
-                  <div className="card reviews-section">
-                    <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '16px' }}>Rating</h3>
+                  <aside className="card card-pad rating-card">
+                    <h2 className="card-heading">Rating</h2>
                     <Stars average={detailAgent.averageRating} count={detailAgent.ratingCount} size={18} />
-                    <p style={{ fontSize: '13px', color: 'var(--text-dim)', marginTop: '14px', lineHeight: 1.6 }}>
+                    <p className="card-lead">
                       Read from the contract. Each rating is 1–5 stars, one per completed job, signed by that job's client. The contract stores only the total and the count, so there are no written reviews.
                     </p>
-                  </div>
+                  </aside>
                 </div>
               )}
             </div>
@@ -339,107 +286,72 @@ export default function App() {
             <>
               {/* ═══ HOME ═══ */}
               {activePage === 'home' && (
-                <div className="page-view home-page">
-                  <div className="home-hero">
+                <div className="page-view">
+                  <section className="home-hero">
                     <div className="hero-content">
-                      <span className="hero-accent-tag">Agero Escrow · Stellar Testnet</span>
-                      <h1 className="hero-title">
-                        Escrow for the <br />
-                        <span className="gradient-text">AI Agent Economy</span>
-                      </h1>
+                      <h1 className="hero-title">Escrow for agent jobs on Stellar Testnet</h1>
                       <p className="hero-desc">
-                        Browse AI agents registered in a Soroban contract on Stellar Testnet. Lock Testnet XLM in escrow with a deadline you choose,
+                        Browse agents registered in a Soroban contract on Stellar Testnet. Lock Testnet XLM in escrow with a deadline you choose,
                         approve the payment after delivery, or refund it if nothing is delivered in time. Agero does not run the agents: their owners do the work outside the app and record only a hash of each result.
                       </p>
-                      <div className="hero-actions">
-                        <button className="btn btn-primary btn-lg" onClick={() => go('marketplace')}>Explore Marketplace</button>
+                      <div className="btn-row">
+                        <button className="btn btn-primary btn-lg" onClick={() => go('marketplace')}>Explore marketplace</button>
                         <button className="btn btn-outline btn-lg" onClick={() => go('jobs')}>My Jobs</button>
                       </div>
                     </div>
                     <div className="hero-graphic">
                       <Robot3D />
                     </div>
-                  </div>
+                  </section>
 
-                  <div className="featured-section">
-                    <h2 className="showcase-title">Registered Agents</h2>
-                    <p className="showcase-desc">Read live from the Agero contract on Stellar Testnet.</p>
+                  <section className="home-section">
+                    <h2 className="section-title">Registered agents</h2>
+                    <p className="section-desc">Read from the Agero contract on Stellar Testnet when the page loads.</p>
                     <RegistryState registry={registry} onRetry={loadRegistry}>
-                      <div className="featured-grid">
-                        {featured.map((agent) => (
-                          <div key={agent.owner} className="card featured-card">
-                            {agent.image && (
-                              <div className="featured-img-wrapper">
-                                <img src={agent.image} alt={`${agent.name} (static sample image)`} width={768} height={768} loading="lazy" decoding="async" className="featured-img" />
-                                <div className="featured-category">{agent.category}</div>
-                                {agent.isSample && <SampleBadge style={{ position: 'absolute', top: '12px', right: '12px' }} />}
-                              </div>
-                            )}
-                            <div className="featured-body">
-                              <h3 className="featured-name"><CardLink onOpen={() => openAgent(agent.owner)}>{agent.name}</CardLink></h3>
-                              <p className="featured-desc">{agent.summary}</p>
-                              <div className="featured-footer">
-                                <span className="featured-price">{stroopsToXlm(agent.price)} XLM</span>
-                                <Stars average={agent.averageRating} count={agent.ratingCount} />
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                      <div className="agent-grid">
+                        {featured.map((agent) => <AgentCard key={agent.owner} agent={agent} onOpen={() => openAgent(agent.owner)} />)}
                       </div>
                     </RegistryState>
-                  </div>
+                  </section>
 
-                  <div className="workflow-section">
-                    <h2 className="showcase-title">How Agero Works</h2>
-                    <p className="showcase-desc">Steps 1, 2 and 4 and the delivery record in step 3 are contract calls on Testnet. The work itself happens outside Agero; the sample agents perform no work at all.</p>
-                    <div className="workflow-timeline">
-                      <div className="timeline-progress-line" />
+                  <section className="home-section">
+                    <h2 className="section-title">How Agero works</h2>
+                    <p className="section-desc">Steps 1, 2 and 4 and the delivery record in step 3 are contract calls on Testnet. The work itself happens outside Agero; the sample agents perform no work at all.</p>
+                    <ol className="steps">
                       {[
                         ['Connect Freighter', 'Connect a Freighter wallet set to Stellar Testnet.'],
-                        ['Lock Escrow', 'create_job moves your XLM into the contract with a deadline between 1 hour and 30 days.'],
-                        ['Agent Delivers', 'The agent owner does the work outside Agero, sends the result to the client, and records its SHA-256 hash with deliver_job from the Agent dashboard.'],
-                        ['Approve or Refund', `complete_job pays the agent. With no delivery by the deadline you can refund. ${REVIEW_HOURS} h after delivery anyone can release the payment.`],
-                      ].map(([title, desc], i) => (
-                        <div key={title} className="timeline-node">
-                          <div className="timeline-indicator">{i + 1}</div>
-                          <div className="card timeline-card">
-                            <h3 className="workflow-card-title">{title}</h3>
-                            <p className="workflow-card-desc">{desc}</p>
-                          </div>
-                        </div>
+                        ['Lock escrow', 'create_job moves your XLM into the contract with a deadline between 1 hour and 30 days.'],
+                        ['Agent delivers', 'The agent owner does the work outside Agero, sends the result to the client, and records its SHA-256 hash with deliver_job from the Agent dashboard.'],
+                        ['Approve or refund', `complete_job pays the agent. With no delivery by the deadline you can refund. ${REVIEW_HOURS} h after delivery anyone can release the payment.`],
+                      ].map(([title, desc]) => (
+                        <li key={title} className="card card-pad step">
+                          <h3 className="step-title">{title}</h3>
+                          <p className="step-desc">{desc}</p>
+                        </li>
                       ))}
-                    </div>
-                  </div>
+                    </ol>
+                  </section>
                 </div>
               )}
 
               {/* ═══ MARKETPLACE ═══ */}
               {activePage === 'marketplace' && (
                 <div className="page-view">
-                  <div className="section-header">
-                    <h1 className="section-title">Marketplace</h1>
+                  <header className="section-header">
+                    <h1 className="page-title">Marketplace</h1>
                     <p className="section-desc">Agents, prices, ratings and job counts are read from the Agero contract on Stellar Testnet. Listings marked Sample were registered by the project's seed script: their endpoints are placeholders and no AI work is performed.</p>
-                  </div>
+                  </header>
 
                   <div className="stat-row">
-                    <div className="card stat-card blue">
-                      <div className="stat-label">Registered agents</div>
-                      <div className="stat-val">{registry.status === 'ready' ? registry.agents.length : '—'}</div>
-                    </div>
-                    <div className="card stat-card rose">
-                      <div className="stat-label">Jobs created (all clients)</div>
-                      <div className="stat-val" style={{ color: 'var(--rose)' }}>{registry.status === 'ready' ? String(registry.jobCount) : '—'}</div>
-                    </div>
-                    <div className="card stat-card green-stat">
-                      <div className="stat-label">Contract</div>
-                      <div className="stat-val" style={{ fontSize: '15px' }}><ExplorerLink href={explorerContractUrl()}>{shortAddress(CONFIG.contractId)}</ExplorerLink></div>
-                    </div>
+                    <StatCard label="Registered agents" value={hasRegistry ? registry.agents.length : '—'} mark={<ContractMark />} />
+                    <StatCard label="Jobs created (all clients)" value={hasRegistry ? String(registry.jobCount) : '—'} mark={<ContractMark />} />
+                    <StatCard label="Contract" value={<ExplorerLink href={explorerContractUrl()}>{shortAddress(CONFIG.contractId)}</ExplorerLink>} />
                   </div>
 
                   <RegistryState registry={registry} onRetry={loadRegistry}>
-                    <div className="filter-row">
+                    <div className="filter-row" role="group" aria-label="Filter by category (set in this frontend)">
                       {categories.map((c) => (
-                        <button key={c} className={`filter-pill ${selectedCategory === c ? 'active' : ''}`} onClick={() => setSelectedCategory(c)}>{c}</button>
+                        <button key={c} className={`filter-pill ${selectedCategory === c ? 'active' : ''}`} aria-pressed={selectedCategory === c} onClick={() => setSelectedCategory(c)}>{c}</button>
                       ))}
                     </div>
                     <div className="agent-grid">
@@ -452,10 +364,10 @@ export default function App() {
               {/* ═══ MY JOBS ═══ */}
               {activePage === 'jobs' && (
                 <div className="page-view">
-                  <div className="section-header">
-                    <h1 className="section-title">My Jobs</h1>
+                  <header className="section-header">
+                    <h1 className="page-title">My Jobs</h1>
                     <p className="section-desc">Escrow jobs where the connected wallet is the client, read from the contract on Stellar Testnet. Buttons appear only when the contract would accept the action.</p>
-                  </div>
+                  </header>
                   <MyJobs
                     wallet={wallet}
                     agentsByOwner={agentsByOwner}
@@ -471,10 +383,10 @@ export default function App() {
               {/* ═══ AGENT DASHBOARD ═══ */}
               {activePage === 'agent' && (
                 <div className="page-view">
-                  <div className="section-header">
-                    <h1 className="section-title">Agent Dashboard</h1>
+                  <header className="section-header">
+                    <h1 className="page-title">Agent Dashboard</h1>
                     <p className="section-desc">For agent owners: register or edit your agent, see jobs hired from it, record deliveries, release payments after the review window, or refund a client. Every action is a contract call on Stellar Testnet signed in Freighter.</p>
-                  </div>
+                  </header>
                   <AgentDashboard wallet={wallet} runTx={runTx} onConnect={handleConnect} onChanged={loadRegistry} onBrowse={() => go('marketplace')} />
                 </div>
               )}
@@ -482,46 +394,46 @@ export default function App() {
               {/* ═══ DEVELOPER ═══ */}
               {activePage === 'developer' && (
                 <div className="page-view">
-                  <div className="section-header">
-                    <h1 className="section-title">Developer Portal</h1>
-                    <p className="section-desc">Register your agent, deliver results and release payments from the Agent dashboard (signed in Freighter). The stellar CLI commands on the right do the same and remain available as an alternative.</p>
-                  </div>
+                  <header className="section-header">
+                    <h1 className="page-title">Developer Portal</h1>
+                    <p className="section-desc">Register your agent, deliver results and release payments from the Agent dashboard (signed in Freighter). The stellar CLI commands below do the same and remain available as an alternative.</p>
+                  </header>
 
                   <div className="dev-layout">
-                    <div className="card dev-form-card">
-                      <h3 className="card-heading"><Zap size={18} style={{ color: 'var(--color-brand-text)' }} /> Your agent</h3>
+                    <section className="card card-pad">
+                      <h2 className="card-heading">Your agent</h2>
                       {!wallet ? (
-                        <p style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '16px' }}>Connect Freighter in the Agent dashboard to register an agent or look up the one for your address.</p>
+                        <p className="card-lead">Connect Freighter in the Agent dashboard to register an agent or look up the one for your address.</p>
                       ) : registry.status === 'error' ? (
                         <ErrorState message={registry.error} onRetry={loadRegistry} />
                       ) : registry.status === 'loading' ? (
-                        <div className="skeleton" style={{ height: '60px', marginBottom: '16px' }} />
+                        <div className="skeleton" />
                       ) : ownAgent ? (
-                        <div className="drawer-info">
-                          <div className="drawer-row"><span className="drawer-row-label">Name</span><span className="drawer-row-val">{ownAgent.name}</span></div>
-                          <div className="drawer-row"><span className="drawer-row-label">Price</span><span className="drawer-row-val">{stroopsToXlm(ownAgent.price)} XLM</span></div>
-                          <div className="drawer-row"><span className="drawer-row-label">Completed jobs</span><span className="drawer-row-val">{ownAgent.totalJobs}</span></div>
-                          <div className="drawer-row"><span className="drawer-row-label">Rating</span><span className="drawer-row-val">{ownAgent.ratingCount > 0 ? `${ownAgent.averageRating.toFixed(1)} (${ownAgent.ratingCount})` : 'none yet'}</span></div>
-                        </div>
+                        <KeyValueList items={[
+                          ['Name', ownAgent.name],
+                          ['Price', `${stroopsToXlm(ownAgent.price)} XLM`],
+                          ['Completed jobs', ownAgent.totalJobs],
+                          ['Rating', ownAgent.ratingCount > 0 ? `${ownAgent.averageRating.toFixed(1)} (${ownAgent.ratingCount})` : 'none yet'],
+                        ]} />
                       ) : (
-                        <p style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '16px' }}>No agent is registered for {shortAddress(wallet)} on this contract.</p>
+                        <p className="card-lead">No agent is registered for {shortAddress(wallet)} on this contract.</p>
                       )}
-                      <button className="btn btn-primary" onClick={() => go('agent')}><Shield size={14} /> Open Agent dashboard</button>
-                      <p className="form-hint" style={{ marginTop: '14px' }}>Agero does not host or run agents. The dashboard records your profile and, per job, a SHA-256 hash of the result you send to the client yourself.</p>
-                    </div>
+                      <button className="btn btn-primary" onClick={() => go('agent')}>Open Agent dashboard</button>
+                      <p className="form-hint">Agero does not host or run agents. The dashboard records your profile and, per job, a SHA-256 hash of the result you send to the client yourself.</p>
+                    </section>
 
-                    <div className="card" style={{ padding: '24px' }}>
-                      <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '14px' }}>Alternative: the stellar CLI</h4>
-                      <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginBottom: '8px' }}>Price is in stroops (1 XLM = 10,000,000). One agent per address.</p>
+                    <section className="card card-pad">
+                      <h2 className="card-heading">Alternative: the stellar CLI</h2>
+                      <p className="form-hint">Price is in stroops (1 XLM = 10,000,000). One agent per address.</p>
                       <pre className="cli-box">{`stellar contract invoke --id ${CONFIG.contractId} \\
   --source-account <identity> --network testnet -- \\
   register_agent --owner <G...> --name "<name>" \\
   --description "<description>" --api_url "<url>" --price <stroops>`}</pre>
-                      <p style={{ fontSize: '12px', color: 'var(--text-dim)', margin: '14px 0 8px' }}>Deliver a job (result_hash = 64 hex characters, e.g. from <code>sha256sum result.zip</code>; the dashboard computes the same hash):</p>
+                      <p className="form-hint">Deliver a job (result_hash = 64 hex characters, e.g. from <code>sha256sum result.zip</code>; the dashboard computes the same hash):</p>
                       <pre className="cli-box">{`stellar contract invoke --id ${CONFIG.contractId} \\
   --source-account <identity> --network testnet -- \\
   deliver_job --job_id <id> --result_hash <hex64>`}</pre>
-                    </div>
+                    </section>
                   </div>
                 </div>
               )}
@@ -535,6 +447,5 @@ export default function App() {
         {playgroundJob && <Playground job={playgroundJob} onClose={() => setPlaygroundJob(null)} />}
         {tx && <TxProgress tx={tx} onClose={() => setTx(null)} />}
       </div>
-    </div>
   );
 }

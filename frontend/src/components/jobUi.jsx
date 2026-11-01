@@ -1,35 +1,55 @@
 import { useRef, useState } from 'react';
 import { CheckCircle, AlertCircle } from 'lucide-react';
-import { JobStatus, jobStatusLabel } from '../chain/jobs';
+import { JobStatus, jobStatusLabel, reviewEndsAt } from '../chain/jobs';
 import { friendlyError } from '../chain/errors';
 import { normalizeHashHex, sha256File, sha256Hex } from '../chain/hash';
+import { stroopsToXlm } from '../chain/units';
+import { ExplorerLink } from './ui';
+import { toDate } from './ledgerTime';
+import DeadlineMeter from './DeadlineMeter';
+import HashChip from './HashChip';
 
 // Shared bits for job lists (My Jobs = client side, Agent dashboard = agent side)
 
-const PROGRESS = {
-  [JobStatus.PENDING]: ['var(--blue)', 'transparent', 'transparent'],
-  [JobStatus.DELIVERED]: ['var(--blue)', 'var(--lavender)', 'transparent'],
-  [JobStatus.COMPLETED]: ['var(--blue)', 'var(--lavender)', 'var(--green)'],
-  [JobStatus.REFUNDED]: ['var(--rose)', 'var(--red)', 'transparent'],
-};
-
-export function JobProgress({ status }) {
-  return (
-    <div className="escrow-progress">
-      {PROGRESS[status].map((c, i) => <div key={i} className="escrow-progress-seg" style={{ background: c }} />)}
-    </div>
-  );
-}
-
 export function StatusBadge({ status }) {
   const label = jobStatusLabel(status);
-  return <span className={`badge badge-${label.toLowerCase()}`}><span className="badge-dot" />{label}</span>;
+  return <span className={`badge badge-${label.toLowerCase()}`}><span className="badge-dot" aria-hidden="true" />{label}</span>;
+}
+
+// The open time window of a job: the deadline while Pending, the review window once Delivered
+function JobMeter({ job, now }) {
+  if (job.status === JobStatus.PENDING) return <DeadlineMeter label="Deadline" start={job.createdAt} end={job.deadline} now={now} />;
+  if (job.status === JobStatus.DELIVERED) return <DeadlineMeter label="Review window" start={job.deliveredAt} end={reviewEndsAt(job)} now={now} />;
+  return null;
+}
+
+// One escrow job. `party` is the other side: { label: 'Agent' | 'Client', name, href }.
+export function JobCard({ job, party, now, children, actions }) {
+  return (
+    <article className="card job-card">
+      <div className="job-main">
+        <div className="job-head">
+          <h3 className="job-title">Job #{String(job.id)}</h3>
+          <StatusBadge status={job.status} />
+          <span className="job-amount">{stroopsToXlm(job.amount)} <span className="job-unit">XLM</span></span>
+        </div>
+        <div className="job-meta">
+          <span>{party.label}: <ExplorerLink href={party.href}>{party.name}</ExplorerLink></span>
+          <span>Created {toDate(job.createdAt)}</span>
+        </div>
+        <JobMeter job={job} now={now} />
+        {children && <p className="job-time">{children}</p>}
+        {job.resultHash && <HashChip hash={job.resultHash} label="Result hash (SHA-256)" sealed />}
+      </div>
+      {actions && <div className="job-actions">{actions}</div>}
+    </article>
+  );
 }
 
 export function JobListSkeleton() {
   return (
-    <div className="escrow-list" aria-busy="true">
-      {[0, 1].map((i) => <div key={i} className="card skeleton-card"><div className="skeleton" style={{ height: '16px', width: '40%' }} /><div className="skeleton" style={{ height: '12px', width: '70%' }} /></div>)}
+    <div className="job-list" aria-busy="true" aria-label="Loading">
+      {[0, 1].map((i) => <div key={i} className="card skeleton-card"><div className="skeleton" /><div className="skeleton" /></div>)}
     </div>
   );
 }
@@ -123,13 +143,8 @@ export function HashSource({ sources = ['file', 'text'], onHash, idPrefix }) {
         </>
       )}
       {result.busy && <div className="form-hint">Computing SHA-256…</div>}
-      {result.error && <p className="form-error" role="alert" style={{ marginTop: '10px' }}>{result.error}</p>}
-      {result.hash && (
-        <div style={{ marginTop: '12px' }}>
-          <div className="field-caption">SHA-256 of {result.label}</div>
-          <div className="mono-box">{result.hash}</div>
-        </div>
-      )}
+      {result.error && <p className="form-error" role="alert">{result.error}</p>}
+      {result.hash && <HashChip hash={result.hash} label={`SHA-256 of ${result.label}`} />}
     </div>
   );
 }
@@ -137,8 +152,8 @@ export function HashSource({ sources = ['file', 'text'], onHash, idPrefix }) {
 // Outcome of comparing a local hash with the one stored in the job
 export function HashMatch({ ok }) {
   return ok ? (
-    <div className="hash-verdict ok" role="status"><CheckCircle size={16} /> Match: this is the exact content the agent recorded.</div>
+    <div className="hash-verdict ok" role="status"><CheckCircle size={16} aria-hidden="true" /> Match: this is the exact content the agent recorded.</div>
   ) : (
-    <div className="hash-verdict bad" role="status"><AlertCircle size={16} /> No match: this is not the exact content the agent recorded (one changed byte gives a different hash).</div>
+    <div className="hash-verdict bad" role="status"><AlertCircle size={16} aria-hidden="true" /> No match: this is not the exact content the agent recorded (one changed byte gives a different hash).</div>
   );
 }

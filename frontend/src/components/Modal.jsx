@@ -47,9 +47,9 @@ export default function Modal({ title, onClose, className = '', children }) {
   return (
     <div className="overlay" onClick={onClose}>
       <div ref={ref} className={`modal ${className}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 id={titleId} className="modal-title" style={{ margin: 0 }}>{title}</h3>
-          <button type="button" className="icon-btn" aria-label="Close" onClick={onClose}><X size={18} /></button>
+        <div className="modal-head">
+          <h2 id={titleId} className="modal-title">{title}</h2>
+          <button type="button" className="icon-btn" aria-label="Close" onClick={onClose}><X size={18} aria-hidden="true" /></button>
         </div>
         {children}
       </div>

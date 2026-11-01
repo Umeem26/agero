@@ -1,42 +1,85 @@
-import { Star, AlertCircle, RefreshCw, ExternalLink } from 'lucide-react';
+import { Star, AlertCircle, RefreshCw, ExternalLink, Shield } from 'lucide-react';
 
-export function Stars({ average, count, size = 13 }) {
+export function Stars({ average, count, size = 14 }) {
   const r = Math.round(average);
+  if (count === 0) {
+    return <span className="star-row star-none" title="Rating stored in the contract: no client has rated this agent yet">No ratings yet</span>;
+  }
   return (
-    <div className="star-row" title="On-chain rating: average of 1-5 star ratings from clients of completed jobs">
-      {[...Array(5)].map((_, i) => (
-        <Star key={i} size={size} className={i < r ? 'star-filled' : 'star-empty'} style={{ fill: i < r ? '#fcd34d' : 'none' }} />
-      ))}
-      <span style={{ fontSize: '12px', color: 'var(--text-dim)', marginLeft: '5px' }}>
-        {count > 0 ? average.toFixed(1) : '—'}
-      </span>
-      <span style={{ fontSize: '11px', color: 'var(--text-dim)', marginLeft: '2px' }}>({count})</span>
-    </div>
+    <span className="star-row" title="Rating stored in the contract: average of 1-5 star ratings from clients of completed jobs">
+      {[...Array(5)].map((_, i) => <Star key={i} size={size} aria-hidden="true" className={i < r ? 'star-filled' : 'star-empty'} />)}
+      <span className="star-value">{average.toFixed(1)}</span>
+      <span className="star-count">({count})</span>
+    </span>
   );
 }
 
-export function SampleBadge({ style }) {
-  return (
-    <span className="sample-badge" title="Sample agent registered by the project's seed script; its endpoint is a placeholder" style={style}>Sample</span>
-  );
+export function SampleBadge() {
+  return <span className="sample-badge" title="Sample agent registered by the project's seed script; its endpoint is a placeholder">Sample</span>;
+}
+
+// Marks values read from the Agero contract, as opposed to metadata kept only in this frontend
+export function ContractMark() {
+  return <span className="src-chain" title="Read from the Agero contract on Stellar Testnet">on contract</span>;
 }
 
 export function ExplorerLink({ href, children }) {
   return (
     <a className="explorer-link" href={href} target="_blank" rel="noreferrer">
-      {children} <ExternalLink size={12} />
+      {children} <ExternalLink size={12} aria-hidden="true" />
     </a>
+  );
+}
+
+export function EmptyState({ icon: Icon, title, children, action, role }) {
+  return (
+    <div className="card empty-state" role={role}>
+      {Icon && <div className="empty-icon"><Icon size={24} aria-hidden="true" /></div>}
+      {title && <p className="empty-title">{title}</p>}
+      {children && <p className="empty-text">{children}</p>}
+      {action}
+    </div>
+  );
+}
+
+export function ConnectPrompt({ children, onConnect }) {
+  return (
+    <EmptyState icon={Shield} action={<button className="btn btn-primary" onClick={onConnect}>Connect Freighter</button>}>
+      {children}
+    </EmptyState>
   );
 }
 
 export function ErrorState({ message, onRetry }) {
   return (
-    <div className="card empty-state" role="alert">
-      <div className="empty-icon"><AlertCircle size={24} /></div>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '6px', fontWeight: 600 }}>Could not read from Stellar Testnet</p>
-      <p style={{ color: 'var(--text-dim)', marginBottom: '16px', fontSize: '13px' }}>{message}</p>
-      {onRetry && <button className="btn btn-outline" onClick={onRetry}><RefreshCw size={14} /> Try again</button>}
+    <EmptyState
+      icon={AlertCircle}
+      role="alert"
+      title="Could not read from Stellar Testnet"
+      action={onRetry && <button className="btn btn-outline" onClick={onRetry}><RefreshCw size={14} aria-hidden="true" /> Try again</button>}
+    >
+      {message}
+    </EmptyState>
+  );
+}
+
+export function StatCard({ label, value, unit, mark }) {
+  return (
+    <div className="card stat-card">
+      <div className="stat-label">{label}{mark}</div>
+      <div className="stat-val">{value}{unit && <span className="stat-unit"> {unit}</span>}</div>
     </div>
+  );
+}
+
+// [[label, value], ...] as a definition list
+export function KeyValueList({ items, className = '' }) {
+  return (
+    <dl className={`kv ${className}`}>
+      {items.filter(Boolean).map(([label, value]) => (
+        <div key={label} className="kv-row"><dt>{label}</dt><dd>{value}</dd></div>
+      ))}
+    </dl>
   );
 }
 
@@ -45,10 +88,7 @@ export function SkeletonCards({ count = 3 }) {
     <div className="agent-grid" aria-busy="true" aria-label="Loading">
       {Array.from({ length: count }, (_, i) => (
         <div key={i} className="card skeleton-card">
-          <div className="skeleton" style={{ height: '18px', width: '60%' }} />
-          <div className="skeleton" style={{ height: '12px', width: '90%' }} />
-          <div className="skeleton" style={{ height: '12px', width: '75%' }} />
-          <div className="skeleton" style={{ height: '16px', width: '35%', marginTop: '12px' }} />
+          <div className="skeleton" /><div className="skeleton" /><div className="skeleton" /><div className="skeleton" />
         </div>
       ))}
     </div>
