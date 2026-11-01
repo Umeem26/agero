@@ -380,3 +380,43 @@ Belum terukur: modal yang butuh wallet (Rate, Verify, Deliver, Refund, Playgroun
 ---
 
 *Aturan standar yang diterapkan: token terkunci, gerbang anti-slop, kejujuran konten, state, aksesibilitas, lantai responsif 320/375/414/768. Yang sengaja tidak diterapkan: self-critique 1–5 per arah (arah belum dibangun), uji Flutter (tidak relevan). Label "opini" menandai penilaian estetika.*
+
+## 13. Status Fase 4b + 4c (2026-11-01)
+
+Commit `ac01782` (4b token & komponen), `2b4098f` (4c visual & Home), plus commit dokumen ini. Arah B "Forest ledger". Diukur dengan Playwright (Chromium 1243, `vite preview`, Testnet langsung, tanpa wallet). Screenshot: `ui-shots/after-4c/` (Home, Marketplace, detail agen, Agent Dashboard tanpa wallet, masing-masing 375 dan 1440) dan `ui-shots/font-specimen.jpg`. Aturan token: [`docs/design-system.md`](../design-system.md).
+
+| Cek | Sebelum (4a, `850cb58`) | Sesudah |
+|---|---|---|
+| Token warna | 19 hex + ±50 `rgba()` tersebar, nama `--blue/--lavender/--rose` | 19 token peran di `:root`; 0 hex dan 0 `rgba()` di luar `:root` |
+| Ukuran font / spasi di luar skala / radius | 16 ukuran / ±53 % / 10 nilai | 7 token (12–40, rasio ±1,25) / 0 / 3 (6, 10, 16) |
+| Strategi kedalaman | border + shadow + blur (12 tempat) + pseudo-border gradien | permukaan lebih terang + border 1 px; 0 `box-shadow`, 0 `backdrop-filter`, 0 gradien |
+| `style={{}}` inline di JSX | 126 | 1 (variabel CSS dinamis `--share` di DeadlineMeter) |
+| Kontras pasangan teks terendah | 4,93:1 (`--text-dim` di modal) | 4,60:1 (`--accent-text` di `surface-3`); semua 35 pasangan teks ≥ 4,5, kontrol ≥ 3 (skrip) |
+| CSS build | 32,21 kB (7,32 kB gzip) | 29,37 kB (5,82 kB gzip) |
+| JS utama | 294,01 kB (89,06 kB gzip) | 290,36 kB (89,40 kB gzip); chunk SDK tidak berubah |
+| `dist/` total | 1.314 KB (11 gambar WebP) | 954 KB (0 gambar) |
+| Overflow horizontal 320/375/414/768/1440 | 0 | 0 di Home, Marketplace, My Jobs, Agent Dashboard, detail |
+| Kontrol < 40 px | 0 | 0 (5 lebar, 5 layar) |
+| Escape menu / kartu via Tab+Enter / animasi jalan saat `reduce` | ya / ya / 0 | ya / ya / 0; timeline tanpa autoplay dan mulai lengkap |
+
+Dependensi: tidak ada yang ditambah atau dihapus. Robot "3D" ternyata canvas buatan tangan tanpa pustaka, jadi tidak ada pustaka 3D untuk dihapus; selisih bundle di atas berasal dari penghapusan kodenya.
+
+**Selesai:** U09–U13 (glass, gradien, bar kiri, titik terminal, aksen ganda), U15/U38 (gambar AI dan robot dihapus, diganti glyph alamat dan Escrow timeline), U19 (latar statis), U20–U23 (skala, inline style, CSS/aset mati, font display via `<link>`), U24 (glosarium: "Connect Freighter", "Outside Agero"), U26 ("Read live" → dibaca sekali saat halaman dimuat), U27 (penanda "on contract" dan kategori dashed), U28 (judul dokumen), U29 (satu token bintang, "No ratings yet"), U31 (Developer → bagian CLI di Agent Dashboard; id lama `developer` dialihkan ke `agent`), U32 (toast error `role="alert"`, tetap sampai ditutup), U33 (angka lama dipertahankan saat refresh), U34 (tombol mengecil saat ditekan), U36/U37. Gate ditambah 4 frasa.
+
+**Uji standar.**
+- *Tanda tangan* (≥ 5 tempat): HashChip di kartu job My Jobs, kartu job Agent Dashboard, Verify, Deliver, hero; DeadlineMeter di dua daftar job, ringkasan Hire, hero; glyph di kartu, detail, dashboard.
+- *Squint* (opini, dari `home-1440.jpg`): yang menonjol berurutan judul hero, tombol teal, chip 120 XLM, hash tersegel; peach hanya muncul pada label Sample/Illustration.
+- *Token:* nama mengikuti peran produk (`sample`, `pending`, `brand`, `surface-n`), bukan nama warna.
+- *Penilaian diri 1–5 (opini):* filosofi 4, hierarki 4, eksekusi 3, spesifisitas 4, restraint 4, variasi 3. Tidak ada yang < 3. Eksekusi 3 karena layar ber-wallet belum dilihat di browser; variasi 3 karena Home masih berupa tumpukan kartu berbobot sama di bawah hero.
+
+**Dilanggar dengan sengaja.**
+- Token ditulis dalam hex, bukan OKLCH: palet dikunci pada hex pilihan Umem dan skrip kontras membaca hex.
+- Warna error dinaikkan dari `#e28c8c` ke `#e89898` (warna semantik, bukan bagian palet bernama) agar lolos 4,5:1 di `surface-3`. Permukaan `surface-1`/`surface-3`, `brand-hover` dan `fg-dim` adalah turunan lightness dari palet.
+- Body memuat 3 bobot Inter (400/500/600); semuanya dipakai.
+- Label edge `refund_job · agent` di diagram dipindah setelah screenshot diambil (batas 8 screenshot), jadi `home-*.jpg` sedikit berbeda dari build akhir di bagian itu.
+- `fetchPulse` ditambahkan di `chain/rpc.js`: hanya baca (`agent_count`, `job_count`, `getTransaction` palsu untuk nomor ledger), tidak menyentuh pipeline tanda tangan.
+
+**Belum diuji di browser (butuh wallet):**
+1. Kartu job nyata di My Jobs / Agent Dashboard: DeadlineMeter berjalan dari waktu ledger dan HashChip tersegel pada job Delivered.
+2. Modal Deliver dan Verify: HashChip hasil hitung lokal, tombol salin (izin clipboard) dan vonis cocok/tidak.
+3. Ringkasan Hire dengan meter tenggat, drawer TxProgress, dan glyph alamat sendiri di kartu "Your agent".
